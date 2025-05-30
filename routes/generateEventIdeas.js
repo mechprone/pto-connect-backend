@@ -10,49 +10,28 @@ router.post('/', async (req, res) => {
   const { schoolLevel } = req.body;
 
   if (!schoolLevel) {
-    return res.status(400).json({ error: 'Missing required field: schoolLevel' });
+    return res.status(400).json({ error: 'Missing schoolLevel' });
   }
 
-  const prompt = `
-You are an AI assistant helping a school PTO plan events. Generate 10 event ideas tailored for a ${schoolLevel} school. Include a title and 1–2 sentence description for each.
-Make sure they are age-appropriate and reflect common PTO goals like community building, fundraising, student celebration, and teacher appreciation.
-
-Format your response as a JSON array like:
-[
-  {
-    "title": "Event Title",
-    "description": "Short description of the event."
-  },
-  ...
-]
-`;
+  const prompt = `Generate 10 creative and engaging event ideas for a ${schoolLevel} school PTO. Include a variety of categories such as student achievement, teacher appreciation, community building, and fundraising. Provide brief descriptions for each.`;
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { role: 'system', content: 'You are an expert PTO event planner.' },
+        { role: 'user', content: prompt }
+      ],
       temperature: 0.7
     });
 
-    const text = response.choices?.[0]?.message?.content;
+    const ideas = response.choices?.[0]?.message?.content;
+    if (!ideas) throw new Error('No response content from OpenAI');
 
-    if (!text) {
-      return res.status(500).json({ error: 'No content received from OpenAI' });
-    }
-
-    // Try parsing the response text as JSON
-    try {
-      const ideas = JSON.parse(text);
-      return res.status(200).json({ ideas });
-    } catch (parseError) {
-      return res.status(500).json({
-        error: 'Failed to parse AI response as JSON',
-        raw: text
-      });
-    }
+    res.json({ ideas });
   } catch (err) {
-    console.error('Error generating event ideas:', err);
-    return res.status(500).json({ error: 'Error contacting OpenAI' });
+    console.error('OpenAI error:', err.response?.data || err.message || err);
+    res.status(500).json({ error: 'Error contacting OpenAI' });
   }
 });
 
