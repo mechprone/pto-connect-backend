@@ -2,7 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const authRoutes = require('./routes/auth')
-const eventIdeaRoutes = require('./routes/generateEventIdeas') // ✅ Add this
+const eventIdeaRoutes = require('./routes/generateEventIdeas')
 
 const app = express()
 app.use(cors())
