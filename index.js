@@ -11,7 +11,7 @@ app.use(express.json());
 
 // Health check route
 app.get('/', (req, res) => {
-  res.send('PTO Central Backend is running');
+  res.send('PTO Connect Backend is running');
 });
 
 // Register routes
