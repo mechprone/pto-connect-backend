@@ -1,5 +1,5 @@
 {
-  "name": "pto-central-backend",
+  "name": "pto-connect-backend",
   "version": "1.0.0",
   "main": "index.js",
   "type": "commonjs",
