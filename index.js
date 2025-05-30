@@ -13,7 +13,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/auth', authRoutes)
-app.use('/api', eventIdeaRoutes) // ✅ Add this
+app.use('/api', eventIdeaRoutes)
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
