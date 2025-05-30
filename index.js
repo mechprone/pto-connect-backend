@@ -1,19 +1,21 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const authRoutes = require('./routes/auth');
+require('dotenv').config()
+const express = require('express')
+const cors = require('cors')
+const authRoutes = require('./routes/auth')
+const eventIdeaRoutes = require('./routes/generateEventIdeas') // ✅ Add this
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const app = express()
+app.use(cors())
+app.use(express.json())
 
 app.get('/', (req, res) => {
-  res.send('PTO Central Backend is running');
-});
+  res.send('PTO Central Backend is running')
+})
 
-app.use('/auth', authRoutes);
+app.use('/auth', authRoutes)
+app.use('/api', eventIdeaRoutes) // ✅ Add this
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+  console.log(`Server listening on port ${PORT}`)
+})
