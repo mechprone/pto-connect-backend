@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: 'You are an expert PTO event planner.' },
         { role: 'user', content: prompt }
