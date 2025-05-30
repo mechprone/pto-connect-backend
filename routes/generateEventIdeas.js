@@ -1,54 +1,59 @@
-const express = require('express')
-const router = express.Router()
-const { Configuration, OpenAIApi } = require('openai')
+const express = require('express');
+const router = express.Router();
+const OpenAI = require('openai');
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-})
-const openai = new OpenAIApi(configuration)
+});
 
-router.post('/generate-event-ideas', async (req, res) => {
-  const { schoolLevel } = req.body
+router.post('/', async (req, res) => {
+  const { schoolLevel } = req.body;
 
   if (!schoolLevel) {
-    return res.status(400).json({ error: 'Missing school level' })
+    return res.status(400).json({ error: 'Missing required field: schoolLevel' });
   }
+
+  const prompt = `
+You are an AI assistant helping a school PTO plan events. Generate 10 event ideas tailored for a ${schoolLevel} school. Include a title and 1–2 sentence description for each.
+Make sure they are age-appropriate and reflect common PTO goals like community building, fundraising, student celebration, and teacher appreciation.
+
+Format your response as a JSON array like:
+[
+  {
+    "title": "Event Title",
+    "description": "Short description of the event."
+  },
+  ...
+]
+`;
 
   try {
-    const response = await openai.createChatCompletion({
+    const response = await openai.chat.completions.create({
       model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert school PTO event planner. Generate creative, helpful, relevant PTO event ideas based on school level.'
-        },
-        {
-          role: 'user',
-          content: `Generate 15 event ideas for a ${schoolLevel} school PTO. Each should include a title, 1-2 sentence description, and 2-3 tags.`
-        }
-      ],
+      messages: [{ role: 'user', content: prompt }],
       temperature: 0.7
-    })
+    });
 
-    const rawIdeas = response.data.choices?.[0]?.message?.content || ''
-    const ideas = rawIdeas
-      .split(/\n(?=\d+\.\s)/) // Split by numbered lines
-      .map((item) => {
-        const match = item.match(/^\d+\.\s(.+?)\n?-?\s*(.*?)(Tags?:\s*(.*))?$/s)
-        if (!match) return null
-        return {
-          title: match[1].trim(),
-          description: match[2]?.trim(),
-          tags: match[4]?.split(',').map(t => t.trim()) || []
-        }
-      })
-      .filter(Boolean)
+    const text = response.choices?.[0]?.message?.content;
 
-    res.json({ ideas })
+    if (!text) {
+      return res.status(500).json({ error: 'No content received from OpenAI' });
+    }
+
+    // Try parsing the response text as JSON
+    try {
+      const ideas = JSON.parse(text);
+      return res.status(200).json({ ideas });
+    } catch (parseError) {
+      return res.status(500).json({
+        error: 'Failed to parse AI response as JSON',
+        raw: text
+      });
+    }
   } catch (err) {
-    console.error('Error generating ideas:', err.message)
-    res.status(500).json({ error: 'Failed to generate ideas' })
+    console.error('Error generating event ideas:', err);
+    return res.status(500).json({ error: 'Error contacting OpenAI' });
   }
-})
+});
 
-module.exports = router
+module.exports = router;
