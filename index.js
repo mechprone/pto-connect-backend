@@ -3,6 +3,10 @@ const cors = require('cors');
 const app = express();
 require('dotenv').config();
 
+//Signup Routes
+const signupRoutes = require('./routes/signup');
+app.use('/api/signup', signupRoutes);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
