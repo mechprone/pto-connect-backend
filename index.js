@@ -1,24 +1,23 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-
-const authRoutes = require('./routes/auth');
-const generateEventIdeasRoutes = require('./routes/generateEventIdeas');
-
 const app = express();
+require('dotenv').config();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Health check route
+// Stripe routes
+const stripeRoutes = require('./routes/stripe');
+app.use('/api/stripe', stripeRoutes);
+
+// Optional: Basic status route
 app.get('/', (req, res) => {
-  res.send('PTO Connect Backend is running');
+  res.send('PTO Connect API is running');
 });
 
-// Register routes
-app.use('/auth', authRoutes);
-app.use('/api/generate-event-ideas', generateEventIdeasRoutes);
-
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
