@@ -10,29 +10,33 @@ router.post('/generate-event', async (req, res) => {
   const { type, season, audience, theme, goal } = req.body
 
   const prompt = `
-You are an expert PTO event planner.
+You are an experienced PTO event planner for schools.
 
-Based on the following inputs:
-- Type: ${type}
-- Season: ${season}
+Using the following details, generate a complete school event plan in **valid JSON** format only:
+
+- Event Type: ${type}
+- Season or Month: ${season}
 - Audience: ${audience}
 - Theme: ${theme}
 - Goal: ${goal}
 
-Generate a JSON object with the following keys:
-- title (string)
-- description (string)
-- event_date (YYYY-MM-DD or estimated)
-- category (Fundraiser, Meeting, Celebration, Other)
-- school_level (elementary, middle, high)
-- location (optional)
-- estimated_budget (optional)
-- tasks (array of 3–5 specific planning tasks)
-- volunteer_roles (array of 3–5 volunteer positions)
-- materials_needed (array of 3–5 materials or supplies)
-- printable_summary (1-paragraph printable summary of the event)
+Your response should exactly match this structure:
 
-Only return a JSON object. Do not include any explanation or formatting.
+{
+  "title": "string",
+  "description": "string",
+  "event_date": "YYYY-MM-DD",
+  "category": "Fundraiser | Meeting | Celebration | Other",
+  "school_level": "elementary | upper_elementary | middle | junior_high | high",
+  "location": "string",
+  "estimated_budget": "string",
+  "tasks": ["task 1", "task 2", "task 3"],
+  "volunteer_roles": ["role 1", "role 2", "role 3"],
+  "materials_needed": ["item 1", "item 2", "item 3"],
+  "printable_summary": "string"
+}
+
+Do not include any commentary, markdown, or extra text — just the JSON object.
 `.trim()
 
   try {
