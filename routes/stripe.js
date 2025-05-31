@@ -29,9 +29,10 @@ router.post('/create-checkout-session', async (req, res) => {
 
     res.json({ sessionUrl: session.url });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    console.error('❌ Stripe Error:', error.message);
+    res.status(500).json({ error: error.message });
   }
+
 });
 
 module.exports = router;
