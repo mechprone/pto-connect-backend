@@ -1,21 +1,20 @@
 const express = require('express');
 const cors = require('cors');
-const app = express();
 require('dotenv').config();
 
-// Signup Routes
-const signupRoutes = require('./routes/signup');
-app.use('/api/signup', signupRoutes);
+const app = express();
 
-// AI Routes
-const aiRoutes = require('./routes/ai')
-app.use('/api/ai', aiRoutes)
-
-// Middleware
+// ✅ Middleware FIRST
 app.use(cors());
 app.use(express.json());
 
-// Stripe routes
+// ✅ Routes after middleware
+const signupRoutes = require('./routes/signup');
+app.use('/api/signup', signupRoutes);
+
+const aiRoutes = require('./routes/ai');
+app.use('/api/ai', aiRoutes);
+
 const stripeRoutes = require('./routes/stripe');
 app.use('/api/stripe', stripeRoutes);
 
