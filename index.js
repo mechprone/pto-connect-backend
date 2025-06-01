@@ -1,14 +1,15 @@
 const express = require('express')
 const cors = require('cors')
-require('dotenv').config()
+const dotenv = require('dotenv')
+dotenv.config()
 
 const app = express()
 
-// Middleware FIRST
+// Middleware for all standard routes
 app.use(cors())
 app.use(express.json())
 
-// Routes after middleware
+// Regular API routes
 const signupRoutes = require('./routes/signup')
 app.use('/api/signup', signupRoutes)
 
@@ -16,51 +17,45 @@ app.use('/api/signup', signupRoutes)
 // const aiRoutes = require('./routes/ai')
 // app.use('/api/ai', aiRoutes)
 
-// Stripe routes (missing STRIPE_SECRET_KEY)
 const stripeRoutes = require('./routes/stripe')
 app.use('/api/stripe', stripeRoutes)
 
-// Events route (long-term secure implementation)
 const eventRoutes = require('./routes/events')
 app.use('/api/events', eventRoutes)
 
-// Supabase test route
 const testRoutes = require('./routes/test')
 app.use('/api', testRoutes)
 
-// Fundraisers route
 const fundraiserRoutes = require('./routes/fundraisers')
 app.use('/api/fundraisers', fundraiserRoutes)
 
-// Budget routes
 const budgetRoutes = require('./routes/budgets')
 app.use('/api/budgets', budgetRoutes)
 
-// Messages routes
 const messageRoutes = require('./routes/messages')
 app.use('/api/messages', messageRoutes)
 
-// Teacher request routes
 const teacherRoutes = require('./routes/teacherRequests')
 app.use('/api/teacher-requests', teacherRoutes)
 
-// Documents routes
 const documentsRoutes = require('./routes/documents')
 app.use('/api/documents', documentsRoutes)
 
-// Shared library routes
 const sharedLibraryRoutes = require('./routes/sharedLibrary')
 app.use('/api/shared-library', sharedLibraryRoutes)
 
-// Admin users routes
 const adminUsersRoutes = require('./routes/adminUsers')
 app.use('/api/admin-users', adminUsersRoutes)
 
-//  Profiles route (user management)
 const profileRoutes = require('./routes/profiles')
 app.use('/api/profiles', profileRoutes)
 
-// Optional: Basic status route
+// ✅ Stripe webhook must be loaded AFTER express.json is applied to all others
+// 👉 Use express.raw() ONLY for this one route
+const stripeWebhook = require('./routes/stripeWebhook')
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook)
+
+// Optional: Basic status check
 app.get('/', (req, res) => {
   res.send('PTO Connect API is running')
 })
