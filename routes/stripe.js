@@ -1,3 +1,4 @@
+// routes/stripe.js
 const express = require('express');
 const router = express.Router();
 const Stripe = require('stripe');
@@ -5,7 +6,12 @@ const { verifySupabaseToken } = require('../services/supabase');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// POST /api/stripe/create-checkout-session
+// ✅ Test route to verify router is working
+router.get('/test', (req, res) => {
+  res.json({ message: 'Stripe route is working' });
+});
+
+// ✅ POST /api/stripe/create-checkout-session
 router.post('/create-checkout-session', async (req, res) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Missing auth token' });
@@ -25,7 +31,7 @@ router.post('/create-checkout-session', async (req, res) => {
       customer_email: email,
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID, // Must be set in env
+          price: process.env.STRIPE_PRICE_ID, // Set this in Render environment variables
           quantity: 1
         }
       ],
@@ -38,7 +44,6 @@ router.post('/create-checkout-session', async (req, res) => {
       },
       success_url: `${process.env.CLIENT_URL}/billing/success`,
       cancel_url: `${process.env.CLIENT_URL}/billing/cancel`
-
     });
 
     res.json({ url: session.url });
