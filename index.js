@@ -16,9 +16,9 @@ app.use('/api/signup', signupRoutes)
 // const aiRoutes = require('./routes/ai')
 // app.use('/api/ai', aiRoutes)
 
-// ⛔ Temporarily disable Stripe routes (missing STRIPE_SECRET_KEY)
-// const stripeRoutes = require('./routes/stripe')
-// app.use('/api/stripe', stripeRoutes)
+// Stripe routes (missing STRIPE_SECRET_KEY)
+const stripeRoutes = require('./routes/stripe')
+app.use('/api/stripe', stripeRoutes)
 
 // Events route (long-term secure implementation)
 const eventRoutes = require('./routes/events')
