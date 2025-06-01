@@ -4,11 +4,11 @@ require('dotenv').config()
 
 const app = express()
 
-// ✅ Middleware FIRST
+// Middleware FIRST
 app.use(cors())
 app.use(express.json())
 
-// ✅ Routes after middleware
+// Routes after middleware
 const signupRoutes = require('./routes/signup')
 app.use('/api/signup', signupRoutes)
 
@@ -20,11 +20,11 @@ app.use('/api/signup', signupRoutes)
 // const stripeRoutes = require('./routes/stripe')
 // app.use('/api/stripe', stripeRoutes)
 
-// ✅ Events route (long-term secure implementation)
+// Events route (long-term secure implementation)
 const eventRoutes = require('./routes/events')
 app.use('/api/events', eventRoutes)
 
-// ✅ Supabase test route
+// Supabase test route
 const testRoutes = require('./routes/test')
 app.use('/api', testRoutes)
 
@@ -55,6 +55,10 @@ app.use('/api/shared-library', sharedLibraryRoutes)
 // Admin users routes
 const adminUsersRoutes = require('./routes/adminUsers')
 app.use('/api/admin-users', adminUsersRoutes)
+
+//  Profiles route (user management)
+const profilesRoutes = require('./routes/profiles')
+app.use('/api/profiles', profilesRoutes)
 
 // Optional: Basic status route
 app.get('/', (req, res) => {
