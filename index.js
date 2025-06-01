@@ -20,9 +20,13 @@ app.use('/api/signup', signupRoutes)
 // const stripeRoutes = require('./routes/stripe')
 // app.use('/api/stripe', stripeRoutes)
 
-// ✅ New: Supabase test route
+// ✅ Events route (long-term secure implementation)
+const eventRoutes = require('./routes/events')
+app.use('/api/events', eventRoutes)
+
+// ✅ Supabase test route
 const testRoutes = require('./routes/test')
-app.use('/api', testRoutes) // Mounts /api/test-supabase
+app.use('/api', testRoutes)
 
 // Optional: Basic status route
 app.get('/', (req, res) => {
