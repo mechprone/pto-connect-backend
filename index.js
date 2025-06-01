@@ -28,6 +28,10 @@ app.use('/api/events', eventRoutes)
 const testRoutes = require('./routes/test')
 app.use('/api', testRoutes)
 
+// Fundraisers route
+const fundraiserRoutes = require('./routes/fundraisers')
+app.use('/api/fundraisers', fundraiserRoutes)
+
 // Optional: Basic status route
 app.get('/', (req, res) => {
   res.send('PTO Connect API is running')
