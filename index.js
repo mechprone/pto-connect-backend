@@ -57,8 +57,8 @@ const adminUsersRoutes = require('./routes/adminUsers')
 app.use('/api/admin-users', adminUsersRoutes)
 
 //  Profiles route (user management)
-const profilesRoutes = require('./routes/profiles')
-app.use('/api/profiles', profilesRoutes)
+const profileRoutes = require('./routes/profiles')
+app.use('/api/profiles', profileRoutes)
 
 // Optional: Basic status route
 app.get('/', (req, res) => {
