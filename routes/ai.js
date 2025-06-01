@@ -1,15 +1,29 @@
 const express = require('express')
 const router = express.Router()
 const { OpenAI } = require('openai')
+const { verifySupabaseToken } = require('../services/supabase')
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+// Safely initialize OpenAI
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null
 
 router.post('/generate-event', async (req, res) => {
-  const { type, season, audience, theme, goal } = req.body
+  // 🔐 Auth check
+  const token = req.headers.authorization?.split('Bearer ')[1]
+  if (!token) return res.status(401).json({ error: 'Missing auth token' })
 
-  const prompt = `
+  try {
+    const user = await verifySupabaseToken(token)
+    // req.user = user // optional if you want to use in future
+
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' })
+    }
+
+    const { type, season, audience, theme, goal } = req.body
+
+    const prompt = `
 You are an experienced PTO event planner for schools.
 
 Using the following details, generate a complete school event plan in **valid JSON** format only:
@@ -37,9 +51,8 @@ Your response should exactly match this structure:
 }
 
 Do not include any commentary, markdown, or extra text — just the JSON object.
-`.trim()
+    `.trim()
 
-  try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
@@ -55,7 +68,7 @@ Do not include any commentary, markdown, or extra text — just the JSON object.
     const response = completion.choices[0].message.content
     res.json({ result: response })
   } catch (err) {
-    console.error('AI generation error:', err)
+    console.error('AI generation error:', err.message)
     res.status(500).json({ error: 'Failed to generate event plan.' })
   }
 })

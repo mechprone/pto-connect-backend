@@ -1,38 +1,63 @@
-const express = require('express');
-const router = express.Router();
-const OpenAI = require('openai');
+const express = require('express')
+const router = express.Router()
+const { OpenAI } = require('openai')
+const { verifySupabaseToken } = require('../services/supabase')
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize OpenAI if API key exists
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null
 
 router.post('/', async (req, res) => {
-  const { schoolLevel } = req.body;
+  const authHeader = req.headers.authorization
 
-  if (!schoolLevel) {
-    return res.status(400).json({ error: 'Missing schoolLevel' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing or malformed auth token' })
   }
 
-  const prompt = `Generate 10 creative and engaging event ideas for a ${schoolLevel} school PTO. Include a variety of categories such as student achievement, teacher appreciation, community building, and fundraising. Provide brief descriptions for each.`;
+  const token = authHeader.split(' ')[1]
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+    const user = await verifySupabaseToken(token)
+
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' })
+    }
+
+    const { keywords } = req.body
+    if (!keywords || keywords.trim().length === 0) {
+      return res.status(400).json({ error: 'Missing keywords or prompt input' })
+    }
+
+    const prompt = `
+You are an expert in school fundraising and community engagement.
+
+Generate 5 unique and creative PTO event ideas based on the following keywords or theme: "${keywords}".
+
+Return only valid JSON in this structure:
+{
+  "ideas": [
+    { "title": "string", "description": "string" },
+    ...
+  ]
+}
+`.trim()
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
       messages: [
-        { role: 'system', content: 'You are an expert PTO event planner.' },
+        { role: 'system', content: 'You are a helpful assistant that creates PTO event ideas in JSON format only.' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.7
-    });
+      temperature: 0.8
+    })
 
-    const ideas = response.choices?.[0]?.message?.content;
-    if (!ideas) throw new Error('No response content from OpenAI');
-
-    res.json({ ideas });
+    const response = completion.choices[0].message.content
+    res.json({ result: response })
   } catch (err) {
-    console.error('OpenAI error:', err.response?.data || err.message || err);
-    res.status(500).json({ error: 'Error contacting OpenAI' });
+    console.error('generateEventIdeas error:', err.message)
+    res.status(500).json({ error: 'Failed to generate event ideas.' })
   }
-});
+})
 
-module.exports = router;
+module.exports = router
