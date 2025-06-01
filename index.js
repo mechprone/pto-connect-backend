@@ -32,6 +32,30 @@ app.use('/api', testRoutes)
 const fundraiserRoutes = require('./routes/fundraisers')
 app.use('/api/fundraisers', fundraiserRoutes)
 
+// Budget routes
+const budgetRoutes = require('./routes/budgets')
+app.use('/api/budgets', budgetRoutes)
+
+// Messages routes
+const messageRoutes = require('./routes/messages')
+app.use('/api/messages', messageRoutes)
+
+// Teacher request routes
+const teacherRoutes = require('./routes/teacherRequests')
+app.use('/api/teacher-requests', teacherRoutes)
+
+// Documents routes
+const documentsRoutes = require('./routes/documents')
+app.use('/api/documents', documentsRoutes)
+
+// Shared library routes
+const sharedLibraryRoutes = require('./routes/sharedLibrary')
+app.use('/api/shared-library', sharedLibraryRoutes)
+
+// Admin users routes
+const adminUsersRoutes = require('./routes/adminUsers')
+app.use('/api/admin-users', adminUsersRoutes)
+
 // Optional: Basic status route
 app.get('/', (req, res) => {
   res.send('PTO Connect API is running')
