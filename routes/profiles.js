@@ -3,21 +3,20 @@ const express = require('express')
 const router = express.Router()
 const { supabase, verifySupabaseToken } = require('../services/supabase')
 
-// 🔐 GET /api/profiles/me - Fetch current user's profile
+// 🔐 GET /api/profiles/me
 router.get('/me', async (req, res) => {
   const token = req.headers.authorization?.split('Bearer ')[1]
-  if (!token) return res.status(401).json({ error: 'Missing auth token' })
+  if (!token) return res.status(401).json({ error: 'Missing token' })
 
   try {
     const user = await verifySupabaseToken(token)
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, role, org_id')
+      .select('*')
       .eq('id', user.id)
       .single()
 
     if (error) throw error
-
     res.json(data)
   } catch (err) {
     console.error('GET /profiles/me error:', err.message)
@@ -25,58 +24,67 @@ router.get('/me', async (req, res) => {
   }
 })
 
-// 🔐 PATCH /api/profiles/role/:id - Admin updates a user's role
-router.patch('/role/:id', async (req, res) => {
+// 🔐 POST /api/profiles/update-role
+router.post('/update-role', async (req, res) => {
   const token = req.headers.authorization?.split('Bearer ')[1]
-  if (!token) return res.status(401).json({ error: 'Missing auth token' })
+  const { user_id, new_role } = req.body
 
-  const userId = req.params.id
-  const { newRole } = req.body
+  if (!token) return res.status(401).json({ error: 'Missing token' })
 
   try {
     const requester = await verifySupabaseToken(token)
-    if (requester.role !== 'admin') {
-      return res.status(403).json({ error: 'Only admins can update roles' })
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', requester.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      return res.status(403).json({ error: 'Insufficient privileges' })
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
-      .update({ role: newRole })
-      .eq('id', userId)
-      .select()
+      .update({ role: new_role })
+      .eq('id', user_id)
 
     if (error) throw error
-
-    res.json({ message: 'Role updated', profile: data[0] })
+    res.json({ message: 'Role updated successfully' })
   } catch (err) {
-    console.error('PATCH /profiles/role error:', err.message)
+    console.error('POST /profiles/update-role error:', err.message)
     res.status(500).json({ error: 'Failed to update role' })
   }
 })
 
-// 🔐 GET /api/profiles/all - Admin fetches all profiles in same PTO
+// 🔐 GET /api/profiles/all
 router.get('/all', async (req, res) => {
   const token = req.headers.authorization?.split('Bearer ')[1]
-  if (!token) return res.status(401).json({ error: 'Missing auth token' })
+  if (!token) return res.status(401).json({ error: 'Missing token' })
 
   try {
     const user = await verifySupabaseToken(token)
-    if (user.role !== 'admin') {
-      return res.status(403).json({ error: 'Only admins can view members' })
+
+    const { data: self } = await supabase
+      .from('profiles')
+      .select('org_id, role')
+      .eq('id', user.id)
+      .single()
+
+    if (self?.role !== 'admin') {
+      return res.status(403).json({ error: 'Insufficient privileges' })
     }
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, role, org_id, created_at')
-      .eq('org_id', user.user_metadata?.org_id || user.app_metadata?.org_id)
-      .order('created_at', { ascending: false })
+      .select('*')
+      .eq('org_id', self.org_id)
 
     if (error) throw error
-
     res.json(data)
   } catch (err) {
     console.error('GET /profiles/all error:', err.message)
-    res.status(500).json({ error: 'Failed to load profiles' })
+    res.status(500).json({ error: 'Failed to fetch profiles' })
   }
 })
 
