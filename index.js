@@ -5,24 +5,34 @@ dotenv.config();
 
 const app = express();
 
-// Middleware for all standard routes
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// --- Auth Routes ---
-const signupRoutes = require('./routes/auth/signup');
+// --- Auth & User Routes ---
+const signupRoutes = require('./routes/users/signup');
+const authRoutes = require('./routes/users/auth');
+const profileRoutes = require('./routes/users/profiles');
+const adminUsersRoutes = require('./routes/users/adminUsers');
+
 app.use('/api/signup', signupRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/profiles', profileRoutes);
+app.use('/api/admin-users', adminUsersRoutes);
 
-// --- Stripe & Webhook ---
-const stripeRoutes = require('./routes/stripe');
+// --- Billing & Stripe ---
+const stripeRoutes = require('./routes/billing/stripe');
+const stripeWebhook = require('./routes/billing/stripeWebhook');
+
 app.use('/api/stripe', stripeRoutes);
-
-const stripeWebhook = require('./routes/stripe/webhook');
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 
 // --- Events ---
 const eventRoutes = require('./routes/events/events');
+const generateIdeasRoutes = require('./routes/events/generateEventIdeas');
+
 app.use('/api/events', eventRoutes);
+app.use('/api/event-ideas', generateIdeasRoutes);
 
 // --- Fundraisers ---
 const fundraiserRoutes = require('./routes/fundraisers/fundraisers');
@@ -34,13 +44,13 @@ app.use('/api/budgets', budgetRoutes);
 
 // --- Communications ---
 const messageRoutes = require('./routes/communications/messages');
-app.use('/api/messages', messageRoutes);
-
 const emailDraftsRoutes = require('./routes/communications/emailDrafts');
+
+app.use('/api/messages', messageRoutes);
 app.use('/api/communications/email-drafts', emailDraftsRoutes);
 
 // --- Teacher Requests ---
-const teacherRoutes = require('./routes/teacherRequests/teacherRequests');
+const teacherRoutes = require('./routes/teacher/teacherRequests');
 app.use('/api/teacher-requests', teacherRoutes);
 
 // --- Documents ---
@@ -51,23 +61,15 @@ app.use('/api/documents', documentsRoutes);
 const sharedLibraryRoutes = require('./routes/sharedLibrary/sharedLibrary');
 app.use('/api/shared-library', sharedLibraryRoutes);
 
-// --- Admin Tools ---
-const adminUsersRoutes = require('./routes/admin/adminUsers');
-app.use('/api/admin-users', adminUsersRoutes);
-
-// --- Profiles ---
-const profileRoutes = require('./routes/users/profiles');
-app.use('/api/profiles', profileRoutes);
-
 // --- Notifications ---
 const notificationsRoutes = require('./routes/notifications/notifications');
 app.use('/api/notifications', notificationsRoutes);
 
-// --- Dev & Testing ---
+// --- Dev / Test ---
 const testRoutes = require('./routes/test/test');
-app.use('/api', testRoutes);
+app.use('/api/test', testRoutes);
 
-// Optional: Basic status check
+// --- Root status ---
 app.get('/', (req, res) => {
   res.send('PTO Connect API is running');
 });
