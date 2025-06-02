@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, verifySupabaseToken } = require('../../services/supabase');
-const { requireActiveSubscription } = require('../../requireActiveSubscription'); // ✅ fixed path
+const { requireActiveSubscription } = require('../requireActiveSubscription'); // ✅ fixed path
 
 // 🔐 Middleware to extract and verify user/org ID
 const withAuth = async (req, res, next) => {
