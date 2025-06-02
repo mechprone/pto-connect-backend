@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // Regular API routes
-const signupRoutes = require('./routes/signup');
+const signupRoutes = require('./routes/auth/signup');
 app.use('/api/signup', signupRoutes);
 
 // ⛔ Temporarily disable AI routes (missing OPENAI_API_KEY)
