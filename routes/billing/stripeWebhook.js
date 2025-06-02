@@ -1,7 +1,7 @@
 const express = require('express')
 const Stripe = require('stripe')
 const dotenv = require('dotenv')
-const { supabase } = require('../utils/supabaseClient')
+const { supabase } = require('../../services/supabase');
 
 dotenv.config()
 
