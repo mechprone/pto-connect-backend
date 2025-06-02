@@ -1,5 +1,3 @@
-// routes/requireActiveSubscription.js
-
 const { supabase } = require('../services/supabase');
 
 /**
@@ -7,7 +5,7 @@ const { supabase } = require('../services/supabase');
  */
 const requireActiveSubscription = async (req, res, next) => {
   try {
-    const orgId = req.user?.org_id;
+    const orgId = req.orgId || req.user?.user_metadata?.org_id;
 
     if (!orgId) {
       console.warn('[Subscription Check] Missing org_id in request');
@@ -36,4 +34,4 @@ const requireActiveSubscription = async (req, res, next) => {
   }
 };
 
-module.exports = requireActiveSubscription;
+module.exports = { requireActiveSubscription };

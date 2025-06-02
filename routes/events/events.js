@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, verifySupabaseToken } = require('../../services/supabase');
-const { requireActiveSubscription } = require('../requireActiveSubscription'); // ✅ fixed path
+const { requireActiveSubscription } = require('../../requireActiveSubscription');
+
+console.log('[events.js] Loaded requireActiveSubscription type:', typeof requireActiveSubscription);
 
 // 🔐 Middleware to extract and verify user/org ID
 const withAuth = async (req, res, next) => {
@@ -18,7 +20,7 @@ const withAuth = async (req, res, next) => {
     req.orgId = orgId;
     next();
   } catch (err) {
-    console.error('Auth middleware error:', err.message);
+    console.error('[events.js] Auth middleware error:', err.message);
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
@@ -27,7 +29,6 @@ const withAuth = async (req, res, next) => {
 router.get('/', withAuth, requireActiveSubscription, async (req, res) => {
   try {
     const { orgId } = req;
-
     const { data, error } = await supabase
       .from('events')
       .select('*')
@@ -37,7 +38,7 @@ router.get('/', withAuth, requireActiveSubscription, async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error('GET /events error:', err.message);
+    console.error('[events.js] GET /events error:', err.message);
     res.status(500).json({ error: 'Failed to fetch events' });
   }
 });
@@ -86,7 +87,7 @@ router.post('/', withAuth, requireActiveSubscription, async (req, res) => {
     if (error) throw error;
     res.status(201).json(data);
   } catch (err) {
-    console.error('POST /events error:', err.message);
+    console.error('[events.js] POST /events error:', err.message);
     res.status(500).json({ error: 'Failed to create event' });
   }
 });
@@ -106,7 +107,7 @@ router.delete('/:id', withAuth, requireActiveSubscription, async (req, res) => {
     if (error) throw error;
     res.status(204).send();
   } catch (err) {
-    console.error('DELETE /events/:id error:', err.message);
+    console.error('[events.js] DELETE /events/:id error:', err.message);
     res.status(500).json({ error: 'Failed to delete event' });
   }
 });
