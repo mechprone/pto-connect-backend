@@ -1,5 +1,3 @@
-// routes/users/profiles.js
-
 const express = require('express');
 const router = express.Router();
 
@@ -32,7 +30,7 @@ const requireAdminRole = async (req, res, next) => {
   }
 };
 
-// ✅ PATCH /api/profiles/:id/approve – approve a user
+// ✅ PATCH /api/profiles/:id/approve – Approve a user
 router.patch(
   '/:id/approve',
   verifySupabaseToken,
@@ -55,7 +53,7 @@ router.patch(
   }
 );
 
-// ✅ DELETE /api/profiles/:id – delete a user
+// ✅ DELETE /api/profiles/:id – Delete a user
 router.delete(
   '/:id',
   verifySupabaseToken,
