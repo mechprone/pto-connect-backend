@@ -53,6 +53,9 @@ app.use('/api/profiles', profileRoutes)
 const notificationsRoutes = require('./routes/notifications')
 app.use('/api/notifications', notificationsRoutes)
 
+const emailDraftsRoutes = require('./routes/emailDrafts')
+app.use('/api/email-drafts', emailDraftsRoutes)
+
 // ✅ Stripe webhook must be loaded AFTER express.json is applied to all others
 // 👉 Use express.raw() ONLY for this one route
 const stripeWebhook = require('./routes/stripeWebhook')
