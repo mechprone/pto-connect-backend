@@ -1,5 +1,5 @@
 // middleware/requireActiveSubscription.js
-const { supabase } = require('../utils/supabaseClient');
+const { supabase } = require('../services/supabase');
 
 const requireActiveSubscription = async (req, res, next) => {
   const orgId = req.user.org_id;
@@ -17,4 +17,4 @@ const requireActiveSubscription = async (req, res, next) => {
   next();
 };
 
-module.exports = { requireActiveSubscription };
+module.exports = requireActiveSubscription;
