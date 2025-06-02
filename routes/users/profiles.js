@@ -1,5 +1,8 @@
+// routes/users/profiles.js
+
 const express = require('express');
 const router = express.Router();
+
 const { supabase, verifySupabaseToken } = require('../../services/supabase');
 const { requireActiveSubscription } = require('../requireActiveSubscription');
 
