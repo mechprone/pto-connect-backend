@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { supabase, verifySupabaseToken } = require('../../services/supabase');
-const { requireActiveSubscription } = require('../requireActiveSubscription');
+const requireActiveSubscription = require('../requireActiveSubscription');
 
 // 🔒 Middleware to allow only admins
 const requireAdminRole = async (req, res, next) => {
