@@ -69,3 +69,4 @@ router.post('/', upload.single('file'), async (req, res) => {
 })
 
 module.exports = router
+console.log('[documents.js] Routes loaded successfully');

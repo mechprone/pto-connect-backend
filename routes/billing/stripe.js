@@ -59,3 +59,4 @@ router.post('/create-checkout-session', async (req, res) => {
 });
 
 module.exports = router;
+console.log('[stripe.js] Routes loaded successfully');

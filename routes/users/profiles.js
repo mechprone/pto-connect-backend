@@ -85,3 +85,4 @@ router.delete(
 );
 
 module.exports = router;
+console.log('[profiles.js] Routes loaded successfully');

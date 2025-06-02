@@ -74,3 +74,4 @@ Do not include any commentary, markdown, or extra text — just the JSON object.
 })
 
 module.exports = router
+console.log('[ai.js] Routes loaded successfully');

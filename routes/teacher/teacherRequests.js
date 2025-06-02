@@ -55,3 +55,4 @@ router.post('/', async (req, res) => {
 })
 
 module.exports = router
+console.log('[teacherRequests.js] Routes loaded successfully');

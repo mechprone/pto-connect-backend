@@ -84,3 +84,4 @@ router.post('/complete', async (req, res) => {
 })
 
 module.exports = router
+console.log('[signup.js] Routes loaded successfully');

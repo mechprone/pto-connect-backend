@@ -61,3 +61,4 @@ Return only valid JSON in this structure:
 })
 
 module.exports = router
+console.log('[generateEventIdeas.js] Routes loaded successfully');

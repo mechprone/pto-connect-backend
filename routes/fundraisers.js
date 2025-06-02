@@ -66,3 +66,4 @@ router.post('/', async (req, res) => {
 })
 
 module.exports = router
+console.log('[fundraisers.js] Routes loaded successfully');

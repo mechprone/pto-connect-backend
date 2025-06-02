@@ -29,3 +29,4 @@ router.get('/', async (req, res) => {
 })
 
 module.exports = router
+console.log('[budgets.js] Routes loaded successfully');

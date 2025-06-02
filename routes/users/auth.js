@@ -27,3 +27,4 @@ router.get('/check', async (req, res) => {
 })
 
 module.exports = router
+console.log('[auth.js] Routes loaded successfully');
