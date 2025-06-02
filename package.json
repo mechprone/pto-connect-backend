@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "commonjs",
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "start": "node index.js"
   },
