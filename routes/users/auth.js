@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { verifySupabaseToken } = require('../services/supabase')
+const { verifySupabaseToken } = require('../../services/supabase')
 
 // 🔐 Token validity check endpoint
 router.get('/check', async (req, res) => {

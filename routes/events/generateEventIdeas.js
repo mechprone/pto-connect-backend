@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { OpenAI } = require('openai')
-const { verifySupabaseToken } = require('../services/supabase')
+const { verifySupabaseToken } = require('../../services/supabase')
 
 // Initialize OpenAI if API key exists
 const openai = process.env.OPENAI_API_KEY

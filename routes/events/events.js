@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { supabase, verifySupabaseToken } = require('../services/supabase')
+const { supabase, verifySupabaseToken } = require('../../services/supabase')
 const { requireActiveSubscription } = require('../middleware/requireActiveSubscription')
 
 // 🔐 Middleware to extract and verify user/org ID
