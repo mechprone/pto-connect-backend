@@ -1,9 +1,9 @@
-const { supabase } = require('../services/supabase');
+import { supabase } from '../util/verifySupabaseToken.js';
 
 /**
  * Middleware to enforce active or trialing subscription status
  */
-const requireActiveSubscription = async (req, res, next) => {
+export const requireActiveSubscription = async (req, res, next) => {
   try {
     const orgId = req.orgId || req.user?.user_metadata?.org_id;
 
@@ -33,5 +33,3 @@ const requireActiveSubscription = async (req, res, next) => {
     res.status(500).json({ error: 'Internal server error during subscription check' });
   }
 };
-
-module.exports = { requireActiveSubscription };

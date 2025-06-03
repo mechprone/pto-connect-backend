@@ -1,9 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const Stripe = require('stripe');
-const { verifySupabaseToken } = require('../../services/supabase');
+import express from 'express';
+import Stripe from 'stripe';
+import { verifySupabaseToken } from '../../util/verifySupabaseToken.js';
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const router = express.Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // ✅ Test route
 router.get('/test', (req, res) => {
@@ -19,7 +19,7 @@ router.post('/create-checkout-session', async (req, res) => {
     const user = await verifySupabaseToken(token);
     const email = user.email;
     const orgId = user.user_metadata?.org_id;
-    const plan = req.body.plan === 'annual' ? 'annual' : 'monthly'; // default to monthly
+    const plan = req.body.plan === 'annual' ? 'annual' : 'monthly';
 
     if (!email || !orgId) {
       return res.status(400).json({ error: 'Missing email or org ID' });
@@ -53,10 +53,10 @@ router.post('/create-checkout-session', async (req, res) => {
 
     res.json({ url: session.url });
   } catch (err) {
-    console.error('Stripe error:', err.message);
+    console.error('[stripe.js] Stripe error:', err.message);
     res.status(500).json({ error: 'Failed to create Stripe session' });
   }
 });
 
-module.exports = router;
 console.log('[stripe.js] Routes loaded successfully');
+export default router;

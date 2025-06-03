@@ -1,75 +1,69 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import stripeWebhookHandler from './routes/stripe/webhook.js';
+
+// Initialize environment
 dotenv.config();
 
 const app = express();
 
-// Middleware
+// Global middleware
 app.use(cors());
 app.use(express.json());
 
-// --- Auth & User Routes ---
-const signupRoutes = require('./routes/users/signup');
-const authRoutes = require('./routes/users/auth');
-const profileRoutes = require('./routes/users/profiles');
-const adminUsersRoutes = require('./routes/users/adminUsers');
+// Routes
+import signupRoutes from './routes/user/signup.js';
+import authRoutes from './routes/auth/auth.js';
+import profileRoutes from './routes/user/profile.js';
+import adminUserRoutes from './routes/user/adminUser.js';
 
+import stripeRoutes from './routes/stripe/stripe.js';
+
+import eventRoutes from './routes/event/event.js';
+import generateEventIdeaRoutes from './routes/event/generateEventIdea.js';
+
+import fundraiserRoutes from './routes/fundraiser/fundraiser.js';
+import budgetRoutes from './routes/budget/budget.js';
+
+import messageRoutes from './routes/communication/message.js';
+import emailDraftRoutes from './routes/communication/emailDraft.js';
+
+import teacherRequestRoutes from './routes/teacher/teacherRequest.js';
+import documentRoutes from './routes/document/document.js';
+import sharedTemplateRoutes from './routes/shared/template.js';
+
+import notificationRoutes from './routes/notification.js';
+import testRoutes from './routes/ai/test.js';
+import aiRoutes from './routes/ai/ai.js';
+
+// API route registration
 app.use('/api/signup', signupRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);
-app.use('/api/admin-users', adminUsersRoutes);
-
-// --- Billing & Stripe ---
-const stripeRoutes = require('./routes/billing/stripe');
-const stripeWebhook = require('./routes/billing/stripeWebhook');
+app.use('/api/admin-users', adminUserRoutes);
 
 app.use('/api/stripe', stripeRoutes);
-app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 
-// --- Events ---
-const eventRoutes = require('./routes/events/events');
-const generateIdeasRoutes = require('./routes/events/generateEventIdeas');
+app.use('/api/event', eventRoutes);
+app.use('/api/event-ideas', generateEventIdeaRoutes);
 
-app.use('/api/events', eventRoutes);
-app.use('/api/event-ideas', generateIdeasRoutes);
-
-// --- Fundraisers ---
-const fundraiserRoutes = require('./routes/fundraisers/fundraisers');
-app.use('/api/fundraisers', fundraiserRoutes);
-
-// --- Budgets ---
-const budgetRoutes = require('./routes/budgets/budgets');
-app.use('/api/budgets', budgetRoutes);
-
-// --- Communications ---
-const messageRoutes = require('./routes/communications/messages');
-const emailDraftsRoutes = require('./routes/communications/emailDrafts');
+app.use('/api/fundraiser', fundraiserRoutes);
+app.use('/api/budget', budgetRoutes);
 
 app.use('/api/messages', messageRoutes);
-app.use('/api/communications/email-drafts', emailDraftsRoutes);
+app.use('/api/communications/email-drafts', emailDraftRoutes);
 
-// --- Teacher Requests ---
-const teacherRoutes = require('./routes/teacher/teacherRequests');
-app.use('/api/teacher-requests', teacherRoutes);
+app.use('/api/teacher-requests', teacherRequestRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/shared-library', sharedTemplateRoutes);
+app.use('/api/notifications', notificationRoutes);
 
-// --- Documents ---
-const documentsRoutes = require('./routes/documents/documents');
-app.use('/api/documents', documentsRoutes);
-
-// --- Shared Library ---
-const sharedLibraryRoutes = require('./routes/sharedLibrary/sharedLibrary');
-app.use('/api/shared-library', sharedLibraryRoutes);
-
-// --- Notifications ---
-const notificationsRoutes = require('./routes/notifications/notifications');
-app.use('/api/notifications', notificationsRoutes);
-
-// --- Dev / Test ---
-const testRoutes = require('./routes/test/test');
 app.use('/api/test', testRoutes);
+app.use('/api/ai', aiRoutes);
 
-// --- Root status ---
+// Health check
 app.get('/', (req, res) => {
   res.send('PTO Connect API is running');
 });

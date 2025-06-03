@@ -1,11 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const { supabase, verifySupabaseToken } = require('../../services/supabase');
+import express from 'express';
+import supabase from '../../util/supabaseClient.js';
+import verifySupabaseToken from '../../util/verifySupabaseToken.js';
 
-// GET all drafts for this org
+const router = express.Router();
+
+// 🔐 GET /api/communication/email-drafts – all drafts for org
 router.get('/', async (req, res) => {
   try {
     const user = await verifySupabaseToken(req.headers.authorization?.split('Bearer ')[1]);
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('org_id')
@@ -20,14 +23,15 @@ router.get('/', async (req, res) => {
       .eq('org_id', profile.org_id);
 
     if (error) throw error;
+
     res.json(data);
   } catch (err) {
-    console.error('GET /email-drafts error:', err.message);
+    console.error('[emailDraft.js] GET error:', err.message);
     res.status(401).json({ error: err.message });
   }
 });
 
-// POST new draft
+// 🔐 POST /api/communication/email-drafts – new draft
 router.post('/', async (req, res) => {
   try {
     const token = req.headers.authorization?.split('Bearer ')[1];
@@ -54,12 +58,12 @@ router.post('/', async (req, res) => {
     if (error) throw error;
     res.status(201).json(data);
   } catch (err) {
-    console.error('POST /email-drafts error:', err.message);
+    console.error('[emailDraft.js] POST error:', err.message);
     res.status(400).json({ error: err.message });
   }
 });
 
-// PUT update draft
+// 🔐 PUT /api/communication/email-drafts/:id – update draft
 router.put('/:id', async (req, res) => {
   try {
     const token = req.headers.authorization?.split('Bearer ')[1];
@@ -77,17 +81,17 @@ router.put('/:id', async (req, res) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', draftId)
-      .eq('user_id', user.id); // Soft auth check
+      .eq('user_id', user.id);
 
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
-    console.error('PUT /email-drafts/:id error:', err.message);
+    console.error('[emailDraft.js] PUT error:', err.message);
     res.status(400).json({ error: err.message });
   }
 });
 
-// DELETE draft
+// 🔐 DELETE /api/communication/email-drafts/:id – delete
 router.delete('/:id', async (req, res) => {
   try {
     const token = req.headers.authorization?.split('Bearer ')[1];
@@ -98,15 +102,14 @@ router.delete('/:id', async (req, res) => {
       .from('email_drafts')
       .delete()
       .eq('id', draftId)
-      .eq('user_id', user.id); // Optional: additional user check
+      .eq('user_id', user.id);
 
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
-    console.error('DELETE /email-drafts/:id error:', err.message);
+    console.error('[emailDraft.js] DELETE error:', err.message);
     res.status(400).json({ error: err.message });
   }
 });
 
-module.exports = router;
-console.log('[emailDrafts.js] Routes loaded successfully');
+export default router;

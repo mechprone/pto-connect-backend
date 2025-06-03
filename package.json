@@ -1,11 +1,12 @@
 {
   "name": "pto-connect-backend",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
-  "type": "commonjs",
-  "packageManager": "npm@10.9.2",
+  "packageManager": "pnpm@10.11.1",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "lint": "eslint routes --ext .js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
@@ -16,8 +17,10 @@
     "openai": "^5.0.1",
     "stripe": "^18.2.0"
   },
+  "devDependencies": {
+    "eslint": "^9.28.0"
+  },
   "engines": {
     "node": ">=20"
-  },
-  "packageManager": "pnpm@10.11.1"
+  }
 }

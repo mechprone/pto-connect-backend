@@ -1,11 +1,15 @@
-const express = require('express')
-const router = express.Router()
+import express from 'express';
+import { createClient } from '@supabase/supabase-js';
+import { verifySupabaseToken } from '../../util/verifySupabaseToken.js';
 
-const { createClient } = require('@supabase/supabase-js')
-const { verifySupabaseToken } = require('../../services/supabase')
+const router = express.Router();
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
+// ✅ POST /api/signup/complete – Onboarding first admin + PTO + district
 router.post('/complete', async (req, res) => {
   const {
     sessionId,
@@ -15,10 +19,10 @@ router.post('/complete', async (req, res) => {
     adminName,
     adminEmail,
     adminPassword
-  } = req.body
+  } = req.body;
 
   if (!ptoName || !adminEmail || !adminPassword) {
-    return res.status(400).json({ error: 'Missing required fields.' })
+    return res.status(400).json({ error: 'Missing required fields.' });
   }
 
   try {
@@ -26,19 +30,19 @@ router.post('/complete', async (req, res) => {
       .from('districts')
       .select('id')
       .eq('name', districtName)
-      .single()
+      .single();
 
     if (districtError || !district) {
       const { data: newDistrict, error } = await supabase
         .from('districts')
         .insert({ name: districtName })
         .select()
-        .single()
-      if (error) throw error
-      district = newDistrict
+        .single();
+      if (error) throw error;
+      district = newDistrict;
     }
 
-    const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+    const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     const { data: pto, error: ptoError } = await supabase
       .from('ptos')
@@ -52,17 +56,17 @@ router.post('/complete', async (req, res) => {
         stripe_subscription_id: null
       })
       .select()
-      .single()
+      .single();
 
-    if (ptoError) throw ptoError
+    if (ptoError) throw ptoError;
 
     const { data: user, error: userError } = await supabase.auth.admin.createUser({
       email: adminEmail,
       password: adminPassword,
       email_confirm: true
-    })
+    });
 
-    if (userError) throw userError
+    if (userError) throw userError;
 
     const { error: profileError } = await supabase
       .from('profiles')
@@ -72,16 +76,16 @@ router.post('/complete', async (req, res) => {
         email: adminEmail,
         role: 'admin',
         pto_id: pto.id
-      })
+      });
 
-    if (profileError) throw profileError
+    if (profileError) throw profileError;
 
-    return res.json({ success: true })
+    return res.json({ success: true });
   } catch (err) {
-    console.error('Signup error:', err.message)
-    return res.status(500).json({ error: err.message })
+    console.error('Signup error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
-})
+});
 
-module.exports = router
 console.log('[signup.js] Routes loaded successfully');
+export default router;

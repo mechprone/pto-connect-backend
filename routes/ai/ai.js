@@ -1,27 +1,25 @@
-const express = require('express')
-const router = express.Router()
-const { OpenAI } = require('openai')
-const { verifySupabaseToken } = require('../../services/supabase')
+import express from 'express';
+import { OpenAI } from 'openai';
+import verifySupabaseToken from '../util/verifySupabaseToken.js';
 
-// Safely initialize OpenAI
+const router = express.Router();
+
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null
+  : null;
 
 router.post('/generate-event', async (req, res) => {
-  // 🔐 Auth check
-  const token = req.headers.authorization?.split('Bearer ')[1]
-  if (!token) return res.status(401).json({ error: 'Missing auth token' })
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) return res.status(401).json({ error: 'Missing auth token' });
 
   try {
-    const user = await verifySupabaseToken(token)
-    // req.user = user // optional if you want to use in future
+    const user = await verifySupabaseToken(token);
 
     if (!openai) {
-      return res.status(500).json({ error: 'OpenAI API key not configured' })
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
-    const { type, season, audience, theme, goal } = req.body
+    const { type, season, audience, theme, goal } = req.body;
 
     const prompt = `
 You are an experienced PTO event planner for schools.
@@ -51,7 +49,7 @@ Your response should exactly match this structure:
 }
 
 Do not include any commentary, markdown, or extra text — just the JSON object.
-    `.trim()
+    `.trim();
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
@@ -63,15 +61,14 @@ Do not include any commentary, markdown, or extra text — just the JSON object.
         { role: 'user', content: prompt }
       ],
       temperature: 0.7
-    })
+    });
 
-    const response = completion.choices[0].message.content
-    res.json({ result: response })
+    const response = completion.choices[0].message.content;
+    res.json({ result: response });
   } catch (err) {
-    console.error('AI generation error:', err.message)
-    res.status(500).json({ error: 'Failed to generate event plan.' })
+    console.error('[ai.js] generation error:', err.message);
+    res.status(500).json({ error: 'Failed to generate event plan.' });
   }
-})
+});
 
-module.exports = router
-console.log('[ai.js] Routes loaded successfully');
+export default router;
