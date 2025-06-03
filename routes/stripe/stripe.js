@@ -1,6 +1,6 @@
 import express from 'express';
 import Stripe from 'stripe';
-import { verifySupabaseToken } from '../../util/verifySupabaseToken.js';
+import { verifySupabaseToken } from '../util/verifySupabaseToken.js';
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { supabase, verifySupabaseToken } from '../../util/verifySupabaseToken.js';
+import { supabase, verifySupabaseToken } from '../util/verifySupabaseToken.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });

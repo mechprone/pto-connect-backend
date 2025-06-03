@@ -1,6 +1,6 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { verifySupabaseToken } from '../../util/verifySupabaseToken.js';
+import { verifySupabaseToken } from '../util/verifySupabaseToken.js';
 
 const router = express.Router();
 
