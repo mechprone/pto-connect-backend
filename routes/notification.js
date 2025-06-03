@@ -1,5 +1,5 @@
 import express from 'express';
-import { supabase, verifySupabaseToken } from '../util/verifySupabaseToken.js';
+import { supabase, verifySupabaseToken } from './util/verifySupabaseToken.js';
 import { requireActiveSubscription } from './requireSubscription.js';
 
 const router = express.Router();

@@ -1,4 +1,4 @@
-import { supabase } from '../util/verifySupabaseToken.js';
+import { supabase } from './util/verifySupabaseToken.js';
 
 /**
  * Middleware to enforce active or trialing subscription status
