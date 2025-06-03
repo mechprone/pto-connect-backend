@@ -1,6 +1,6 @@
 import express from 'express';
 import { OpenAI } from 'openai';
-import verifySupabaseToken from '../util/verifySupabaseToken.js';
+import { supabase, verifySupabaseToken } from '../util/verifySupabaseToken.js';
 
 const router = express.Router();
 

@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { supabase } from '../util/verifySupabaseToken.js';
+import { supabase, verifySupabaseToken } from '../util/verifySupabaseToken.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
