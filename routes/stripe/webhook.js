@@ -37,6 +37,10 @@ export default async function webhookHandler(req, res) {
           status: subscription.status,
           start_date: new Date(subscription.start_date * 1000),
           current_period_end: new Date(subscription.current_period_end * 1000),
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          trial_end: subscription.trial_end
+            ? new Date(subscription.trial_end * 1000)
+            : null,
           plan
         });
 
@@ -51,7 +55,11 @@ export default async function webhookHandler(req, res) {
           .from('subscriptions')
           .update({
             status: subscription.status,
-            current_period_end: new Date(subscription.current_period_end * 1000)
+            current_period_end: new Date(subscription.current_period_end * 1000),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            trial_end: subscription.trial_end
+              ? new Date(subscription.trial_end * 1000)
+              : null
           })
           .eq('stripe_subscription_id', subscription.id);
 
