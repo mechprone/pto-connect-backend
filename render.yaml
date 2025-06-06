@@ -3,12 +3,15 @@ services:
     name: pto-connect-backend
     env: node
     plan: free
-    buildCommand: rm -rf node_modules package-lock.json pnpm-lock.yaml && npm install
+    buildCommand: npm install
     startCommand: npm start
+    autoDeploy: false
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      - key: RENDER_DISABLE_CACHE
+        value: "true"
       - key: NPM_CONFIG_PACKAGE_LOCK
         value: "true"
