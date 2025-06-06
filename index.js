@@ -1,10 +1,16 @@
+// Initialize environment FIRST (before any imports that need env vars)
+import dotenv from 'dotenv'
+dotenv.config()
+
+// Debug: Check if environment variables are loading
+console.log('🔍 Environment Debug:')
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Found ✅' : 'Missing ❌')
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Found ✅' : 'Missing ❌')
+console.log('PORT:', process.env.PORT ? 'Found ✅' : 'Missing ❌')
+
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import stripeWebhookHandler from './routes/stripe/webhook.js'
-
-// Initialize environment
-dotenv.config()
 
 const app = express()
 
