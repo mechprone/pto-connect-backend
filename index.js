@@ -14,8 +14,21 @@ import stripeWebhookHandler from './routes/stripe/webhook.js'
 
 const app = express()
 
+// CORS configuration for production deployment
+const corsOptions = {
+  origin: [
+    'http://localhost:3001',                    // Local development
+    'https://pto-connect.vercel.app',          // Production Vercel domain
+    'https://pto-connect-*.vercel.app',        // Vercel preview deployments
+    /^https:\/\/pto-connect.*\.vercel\.app$/   // Regex for all Vercel deployments
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-supabase-auth']
+}
+
 // Global middleware
-app.use(cors())
+app.use(cors(corsOptions))
 app.use(express.json())
 
 // Routes
