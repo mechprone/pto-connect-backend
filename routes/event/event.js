@@ -1,39 +1,26 @@
 import express from 'express';
-import { supabase, verifySupabaseToken } from '../util/verifySupabaseToken.js';
+import { supabase } from '../util/verifySupabaseToken.js';
 import { requireActiveSubscription } from '../requireSubscription.js';
+import { getUserOrgContext, addUserOrgToBody } from '../middleware/organizationalContext.js';
+import { requireVolunteer, canManageEvents } from '../middleware/roleBasedAccess.js';
 
 const router = express.Router();
 
-// Middleware to extract user/org info using Supabase token
-const withAuth = async (req, res, next) => {
-  const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Missing auth token' });
-
+// GET /api/event – Get all events for user's organization
+router.get('/', getUserOrgContext, requireVolunteer, requireActiveSubscription, async (req, res) => {
   try {
-    const user = await verifySupabaseToken(token);
-    const orgId = user.user_metadata?.org_id || user.app_metadata?.org_id;
-    if (!orgId) return res.status(400).json({ error: 'Missing org ID in user metadata' });
-
-    req.user = user;
-    req.orgId = orgId;
-    next();
-  } catch (err) {
-    console.error('[event.js] Auth middleware error:', err.message);
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
-};
-
-// GET /api/event – Get all events for user's PTO
-router.get('/', withAuth, requireActiveSubscription, async (req, res) => {
-  try {
-    const { orgId } = req;
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .eq('org_id', orgId)
+      .eq('org_id', req.orgId)
       .order('event_date', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error(`❌ Error fetching events for org ${req.orgId}:`, error.message);
+      return res.status(500).json({ error: 'Failed to fetch events' });
+    }
+
+    console.log(`✅ Retrieved ${data.length} events for org ${req.orgId}`);
     res.json(data);
   } catch (err) {
     console.error('[event.js] GET /event error:', err.message);
@@ -41,10 +28,9 @@ router.get('/', withAuth, requireActiveSubscription, async (req, res) => {
   }
 });
 
-// POST /api/event – Create a new event
-router.post('/', withAuth, requireActiveSubscription, async (req, res) => {
+// POST /api/event – Create a new event (committee lead+ required)
+router.post('/', getUserOrgContext, addUserOrgToBody, canManageEvents, requireActiveSubscription, async (req, res) => {
   try {
-    const { orgId } = req;
     const {
       title,
       description,
@@ -77,12 +63,18 @@ router.post('/', withAuth, requireActiveSubscription, async (req, res) => {
         start_time,
         end_time,
         share_public,
-        org_id: orgId
+        org_id: req.body.org_id, // Added by addUserOrgToBody middleware
+        created_by: req.user.id
       }])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error(`❌ Error creating event for org ${req.orgId}:`, error.message);
+      return res.status(500).json({ error: 'Failed to create event' });
+    }
+
+    console.log(`✅ Event created for org ${req.orgId} by user ${req.user.id}`);
     res.status(201).json(data);
   } catch (err) {
     console.error('[event.js] POST /event error:', err.message);
@@ -90,19 +82,44 @@ router.post('/', withAuth, requireActiveSubscription, async (req, res) => {
   }
 });
 
-// DELETE /api/event/:id – Delete an event by ID
-router.delete('/:id', withAuth, requireActiveSubscription, async (req, res) => {
+// DELETE /api/event/:id – Delete an event by ID (committee lead+ required)
+router.delete('/:id', getUserOrgContext, canManageEvents, requireActiveSubscription, async (req, res) => {
   try {
-    const { orgId } = req;
     const eventId = req.params.id;
+
+    // Verify event belongs to user's organization before deletion
+    const { data: event, error: fetchError } = await supabase
+      .from('events')
+      .select('org_id')
+      .eq('id', eventId)
+      .single();
+
+    if (fetchError) {
+      console.error(`❌ Error fetching event ${eventId}:`, fetchError.message);
+      return res.status(500).json({ error: 'Error fetching event' });
+    }
+
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (event.org_id !== req.orgId) {
+      console.warn(`🚫 Cross-org access denied: Event ${eventId} not in org ${req.orgId}`);
+      return res.status(403).json({ error: 'Event not found in your organization' });
+    }
 
     const { error } = await supabase
       .from('events')
       .delete()
       .eq('id', eventId)
-      .eq('org_id', orgId);
+      .eq('org_id', req.orgId);
 
-    if (error) throw error;
+    if (error) {
+      console.error(`❌ Error deleting event ${eventId}:`, error.message);
+      return res.status(500).json({ error: 'Failed to delete event' });
+    }
+
+    console.log(`✅ Event ${eventId} deleted from org ${req.orgId} by user ${req.user.id}`);
     res.status(204).send();
   } catch (err) {
     console.error('[event.js] DELETE /event/:id error:', err.message);

@@ -39,6 +39,7 @@ import signupRoutes from './routes/user/signup.js'
 import authRoutes from './routes/auth/auth.js'
 import profileRoutes from './routes/user/profile.js'
 import adminUserRoutes from './routes/user/adminUser.js'
+import adminPermissionRoutes from './routes/admin/organizationPermissions.js'
 
 import stripeRoutes from './routes/stripe/stripe.js'
 import getPricesRoute from './routes/stripe/getPrices.js' // ✅ NEW ROUTE
@@ -65,6 +66,7 @@ app.use('/api/signup', signupRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/profiles', profileRoutes)
 app.use('/api/admin-users', adminUserRoutes)
+app.use('/api/admin/organization-permissions', adminPermissionRoutes)
 
 app.use('/api/stripe', stripeRoutes)
 app.use('/api/stripe', getPricesRoute) // ✅ Mount getPrices under /api/stripe
