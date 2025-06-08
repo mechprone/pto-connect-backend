@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { supabase } from '../util/verifySupabaseToken.js';
 import { getUserOrgContext, addUserOrgToBody } from '../middleware/organizationalContext.js';
-import { requireVolunteer, canManageDocuments } from '../middleware/roleBasedAccess.js';
+import { requireVolunteer, requireCommitteeLead } from '../middleware/roleBasedAccess.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -30,7 +30,7 @@ router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
 });
 
 // POST /api/documents – Upload document (committee lead+ required)
-router.post('/', getUserOrgContext, canManageDocuments, upload.single('file'), async (req, res) => {
+router.post('/', getUserOrgContext, requireCommitteeLead, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
