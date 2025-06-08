@@ -1,0 +1,6 @@
+# Test GitHub Auto-Deployment
+
+This file was created to test the GitHub Actions workflow for automatic deployment to Railway.
+
+Created: 2025-06-07
+Purpose: Verify GitHub integration is working correctly

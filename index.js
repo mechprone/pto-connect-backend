@@ -18,9 +18,12 @@ const app = express()
 const corsOptions = {
   origin: [
     'http://localhost:3001',                    // Local development
-    'https://pto-connect.vercel.app',          // Production Vercel domain
-    'https://pto-connect-*.vercel.app',        // Vercel preview deployments
-    /^https:\/\/pto-connect.*\.vercel\.app$/   // Regex for all Vercel deployments
+    'https://app.ptoconnect.com',              // Production Railway domain (main app)
+    'https://www.ptoconnect.com',              // Production Railway domain (public site)
+    'https://pto-connect-production.up.railway.app',  // Railway production domain
+    'https://pto-connect-public-production.up.railway.app',  // Railway public site domain
+    /^https:\/\/.*\.up\.railway\.app$/,        // All Railway deployments
+    /^https:\/\/.*\.railway\.app$/             // Railway custom domains
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
