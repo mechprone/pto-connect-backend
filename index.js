@@ -70,6 +70,7 @@ import expenseRoutes from './routes/expenses/expenses.js'
 
 import messageRoutes from './routes/communication/message.js'
 import emailDraftRoutes from './routes/communication/emailDraft.js'
+import communicationRoutes from './routes/communication/index.js'
 
 import teacherRequestRoutes from './routes/teacher/teacherRequest.js'
 import documentRoutes from './routes/document/document.js'
@@ -106,6 +107,7 @@ app.use('/api/expenses', expenseRoutes)
 
 app.use('/api/messages', messageRoutes)
 app.use('/api/communications/email-drafts', emailDraftRoutes)
+app.use('/api/communications', communicationRoutes)
 
 app.use('/api/teacher-requests', teacherRequestRoutes)
 app.use('/api/documents', documentRoutes)
