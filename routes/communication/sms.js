@@ -19,7 +19,7 @@ try {
   console.error('[sms.js] Failed to initialize Twilio client:', error.message);
 }
 
-// GET /api/communications/sms-campaigns - Get SMS campaigns for organization
+// GET /api/communications/sms/campaigns - Get SMS campaigns for organization
 router.get('/campaigns', getUserOrgContext, requireVolunteer, async (req, res) => {
   try {
     const { status, limit = 50, offset = 0 } = req.query;
