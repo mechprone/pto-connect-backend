@@ -6,8 +6,18 @@ import twilio from 'twilio';
 
 const router = express.Router();
 
-// Initialize Twilio client
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// Initialize Twilio client with error handling
+let twilioClient = null;
+try {
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    console.log('[sms.js] Twilio client initialized successfully');
+  } else {
+    console.warn('[sms.js] Twilio credentials not configured - SMS functionality will be limited');
+  }
+} catch (error) {
+  console.error('[sms.js] Failed to initialize Twilio client:', error.message);
+}
 
 // GET /api/communications/sms-campaigns - Get SMS campaigns for organization
 router.get('/campaigns', getUserOrgContext, requireVolunteer, async (req, res) => {
@@ -321,6 +331,14 @@ router.post('/campaigns/:id/send', getUserOrgContext, canManageCommunications, a
         sent_at: new Date().toISOString()
       })
       .eq('id', campaignId);
+
+    // Check if Twilio is configured
+    if (!twilioClient) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'SMS service not configured. Please contact administrator.' 
+      });
+    }
 
     // Send SMS messages
     let sentCount = 0;
