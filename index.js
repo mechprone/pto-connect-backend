@@ -30,9 +30,25 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'x-supabase-auth']
 }
 
+// Import new middleware
+import { standardizeResponse } from './routes/middleware/responseStandardization.js';
+import { globalErrorHandler, notFoundHandler } from './routes/middleware/errorHandler.js';
+import { setupDocumentation } from './routes/documentation.js';
+import { authenticateApiKey } from './routes/middleware/apiKeyAuth.js';
+import { smartRateLimit } from './routes/middleware/rateLimiting.js';
+import { performanceMonitoring } from './routes/middleware/performanceMonitoring.js';
+import { apiCache } from './routes/middleware/apiCaching.js';
+
 // Global middleware
 app.use(cors(corsOptions))
 app.use(express.json())
+
+// Apply security and performance middleware to all routes
+app.use(performanceMonitoring) // Track all request performance
+app.use(authenticateApiKey) // Support API key authentication
+app.use(smartRateLimit) // Intelligent rate limiting
+app.use(apiCache({ useMemoryFallback: true })) // API response caching
+app.use(standardizeResponse) // Standardize all responses
 
 // Routes
 import signupRoutes from './routes/user/signup.js'
@@ -49,6 +65,8 @@ import generateEventIdeaRoutes from './routes/event/generateEventIdea.js'
 
 import fundraiserRoutes from './routes/fundraiser/fundraiser.js'
 import budgetRoutes from './routes/budget/budget.js'
+import budgetCategoryRoutes from './routes/budget/categories.js'
+import expenseRoutes from './routes/expenses/expenses.js'
 
 import messageRoutes from './routes/communication/message.js'
 import emailDraftRoutes from './routes/communication/emailDraft.js'
@@ -60,6 +78,8 @@ import sharedTemplateRoutes from './routes/shared/template.js'
 import notificationRoutes from './routes/notification.js'
 import testRoutes from './routes/ai/test.js'
 import aiRoutes from './routes/ai/ai.js'
+import apiKeyRoutes from './routes/apiKeys.js'
+import monitoringRoutes from './routes/monitoring.js'
 
 // API route registration
 app.use('/api/signup', signupRoutes)
@@ -67,6 +87,8 @@ app.use('/api/auth', authRoutes)
 app.use('/api/profiles', profileRoutes)
 app.use('/api/admin-users', adminUserRoutes)
 app.use('/api/admin/organization-permissions', adminPermissionRoutes)
+app.use('/api', apiKeyRoutes) // API key management routes
+app.use('/api', monitoringRoutes) // Performance monitoring routes
 
 app.use('/api/stripe', stripeRoutes)
 app.use('/api/stripe', getPricesRoute) // ✅ Mount getPrices under /api/stripe
@@ -79,6 +101,8 @@ app.use('/api/event-ideas', generateEventIdeaRoutes)
 
 app.use('/api/fundraiser', fundraiserRoutes)
 app.use('/api/budget', budgetRoutes)
+app.use('/api/budget/categories', budgetCategoryRoutes)
+app.use('/api/expenses', expenseRoutes)
 
 app.use('/api/messages', messageRoutes)
 app.use('/api/communications/email-drafts', emailDraftRoutes)
@@ -102,12 +126,21 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0'
+    version: '1.3.0'
   })
 })
+
+// Setup API documentation
+setupDocumentation(app)
+
+// Error handling middleware (must be last)
+app.use(notFoundHandler)
+app.use(globalErrorHandler)
 
 // Start server
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`)
+  console.log(`📚 API Documentation available at: http://localhost:${PORT}/api/docs`)
+  console.log(`🔍 Health check available at: http://localhost:${PORT}/api/health`)
 })
