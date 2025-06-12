@@ -33,33 +33,67 @@ ALTER TABLE reconciliations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bank_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE matched_transactions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Enable all for users based on organization"
-ON reconciliations
-FOR ALL
-USING (
-  org_id = (
-    SELECT org_id FROM user_profiles WHERE user_id = auth.uid()
-  )
-);
+-- Reconciliations RLS Policies
+CREATE POLICY "Users can view reconciliations for their organization" ON reconciliations
+  FOR SELECT USING (
+    org_id IN (
+      SELECT organization_id FROM user_profiles 
+      WHERE user_id = auth.uid()
+    )
+  );
 
-CREATE POLICY "Enable all for users based on organization"
-ON bank_transactions
-FOR ALL
-USING (
-  (
-    SELECT org_id FROM reconciliations WHERE id = reconciliation_id
-  ) = (
-    SELECT org_id FROM user_profiles WHERE user_id = auth.uid()
-  )
-);
+CREATE POLICY "Treasurers and above can manage reconciliations" ON reconciliations
+  FOR ALL USING (
+    org_id IN (
+      SELECT ur.organization_id FROM user_roles ur
+      JOIN user_profiles up ON ur.user_id = up.user_id
+      WHERE up.user_id = auth.uid()
+      AND ur.role_type IN ('admin', 'board_member', 'treasurer', 'committee_lead')
+    )
+  );
 
-CREATE POLICY "Enable all for users based on organization"
-ON matched_transactions
-FOR ALL
-USING (
-  (
-    SELECT org_id FROM reconciliations WHERE id = reconciliation_id
-  ) = (
-    SELECT org_id FROM user_profiles WHERE user_id = auth.uid()
-  )
-);
+-- Bank Transactions RLS Policies
+CREATE POLICY "Users can view bank transactions for their organization" ON bank_transactions
+  FOR SELECT USING (
+    (
+      SELECT org_id FROM reconciliations WHERE id = reconciliation_id
+    ) IN (
+      SELECT organization_id FROM user_profiles 
+      WHERE user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Treasurers and above can manage bank transactions" ON bank_transactions
+  FOR ALL USING (
+    (
+      SELECT org_id FROM reconciliations WHERE id = reconciliation_id
+    ) IN (
+      SELECT ur.organization_id FROM user_roles ur
+      JOIN user_profiles up ON ur.user_id = up.user_id
+      WHERE up.user_id = auth.uid()
+      AND ur.role_type IN ('admin', 'board_member', 'treasurer', 'committee_lead')
+    )
+  );
+
+-- Matched Transactions RLS Policies
+CREATE POLICY "Users can view matched transactions for their organization" ON matched_transactions
+  FOR SELECT USING (
+    (
+      SELECT org_id FROM reconciliations WHERE id = reconciliation_id
+    ) IN (
+      SELECT organization_id FROM user_profiles 
+      WHERE user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Treasurers and above can manage matched transactions" ON matched_transactions
+  FOR ALL USING (
+    (
+      SELECT org_id FROM reconciliations WHERE id = reconciliation_id
+    ) IN (
+      SELECT ur.organization_id FROM user_roles ur
+      JOIN user_profiles up ON ur.user_id = up.user_id
+      WHERE up.user_id = auth.uid()
+      AND ur.role_type IN ('admin', 'board_member', 'treasurer', 'committee_lead')
+    )
+  );
