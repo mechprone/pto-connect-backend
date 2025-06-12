@@ -1,0 +1,153 @@
+import express from 'express';
+const router = express.Router();
+import { supabase } from '../util/verifySupabaseToken.js';
+import { getUserOrgContext as authenticate } from '../middleware/organizationalContext.js';
+
+// Get all reconciliations for the organization
+router.get('/', authenticate, async (req, res) => {
+  const { org_id } = req.user;
+
+  try {
+    const { data, error } = await supabase
+      .from('reconciliations')
+      .select('*')
+      .eq('org_id', org_id)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false });
+
+    if (error) throw error;
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch reconciliations.', details: error.message });
+  }
+});
+
+// Start a new reconciliation
+router.post('/start', authenticate, async (req, res) => {
+  const { month, year } = req.body;
+  const { org_id } = req.user;
+
+  if (!month || !year) {
+    return res.status(400).json({ error: 'Month and year are required.' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('reconciliations')
+      .insert([{ org_id, month, year, status: 'in_progress' }])
+      .select();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, data: data[0] });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to start reconciliation.', details: error.message });
+  }
+});
+
+// Upload bank statement (placeholder for OCR integration)
+router.post('/:id/upload', authenticate, async (req, res) => {
+  const { id } = req.params;
+  // In a real implementation, this would handle file uploads and OCR processing.
+  // For now, we'll simulate the creation of bank transactions.
+  const { transactions } = req.body; // Expecting an array of transactions
+
+  if (!transactions || !Array.isArray(transactions)) {
+    return res.status(400).json({ error: 'Transactions array is required.' });
+  }
+
+  try {
+    const transactionsToInsert = transactions.map(t => ({
+      reconciliation_id: id,
+      transaction_date: t.date,
+      description: t.description,
+      amount: t.amount
+    }));
+
+    const { data, error } = await supabase
+      .from('bank_transactions')
+      .insert(transactionsToInsert)
+      .select();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to upload bank statement.', details: error.message });
+  }
+});
+
+// Get transactions for a reconciliation
+router.get('/:id/transactions', authenticate, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data: reconciliation, error: recError } = await supabase
+      .from('reconciliations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (recError) throw recError;
+
+    const { data: bankTransactions, error: bankError } = await supabase
+      .from('bank_transactions')
+      .select('*')
+      .eq('reconciliation_id', id);
+
+    if (bankError) throw bankError;
+
+    const { data: systemExpenses, error: expenseError } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('org_id', reconciliation.org_id)
+      .gte('expense_date', `${reconciliation.year}-${reconciliation.month}-01`)
+      .lte('expense_date', `${reconciliation.year}-${reconciliation.month}-31`);
+
+    if (expenseError) throw expenseError;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        reconciliation,
+        bankTransactions,
+        systemExpenses
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch transactions.', details: error.message });
+  }
+});
+
+// Match a transaction
+router.post('/:id/match', authenticate, async (req, res) => {
+  const { id: reconciliation_id } = req.params;
+  const { bank_transaction_id, expense_id } = req.body;
+
+  if (!bank_transaction_id || !expense_id) {
+    return res.status(400).json({ error: 'Bank transaction ID and expense ID are required.' });
+  }
+
+  try {
+    // Create the match
+    const { data: match, error: matchError } = await supabase
+      .from('matched_transactions')
+      .insert([{ reconciliation_id, bank_transaction_id, expense_id }])
+      .select()
+      .single();
+
+    if (matchError) throw matchError;
+
+    // Mark the bank transaction as matched
+    const { error: updateError } = await supabase
+      .from('bank_transactions')
+      .update({ is_matched: true })
+      .eq('id', bank_transaction_id);
+
+    if (updateError) throw updateError;
+
+    res.status(201).json({ success: true, data: match });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to match transaction.', details: error.message });
+  }
+});
+
+export default router;

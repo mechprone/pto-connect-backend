@@ -67,6 +67,7 @@ import fundraiserRoutes from './routes/fundraiser/fundraiser.js'
 import budgetRoutes from './routes/budget/budget.js'
 import budgetCategoryRoutes from './routes/budget/categories.js'
 import expenseRoutes from './routes/expenses/expenses.js'
+import reconciliationRoutes from './routes/budget/reconciliation.js'
 
 import messageRoutes from './routes/communication/message.js'
 import emailDraftRoutes from './routes/communication/emailDraft.js'
@@ -104,6 +105,7 @@ app.use('/api/fundraiser', fundraiserRoutes)
 app.use('/api/budget', budgetRoutes)
 app.use('/api/budget/categories', budgetCategoryRoutes)
 app.use('/api/expenses', expenseRoutes)
+app.use('/api/reconciliation', reconciliationRoutes)
 
 app.use('/api/messages', messageRoutes)
 app.use('/api/communications/email-drafts', emailDraftRoutes)
