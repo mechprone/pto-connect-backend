@@ -18,7 +18,7 @@ export const getUserOrgContext = async (req, res, next) => {
     // Get user profile with organizational context
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('org_id, role, first_name, last_name, email')
+      .select('org_id, role, full_name, first_name, last_name, email, approved')
       .eq('id', user.id)
       .single();
 

@@ -5,7 +5,7 @@ import { getUserOrgContext as authenticate } from '../middleware/organizationalC
 
 // Get all reconciliations for the organization
 router.get('/', authenticate, async (req, res) => {
-  const { org_id } = req.user;
+  const { org_id } = req.profile;
 
   try {
     const { data, error } = await supabase
@@ -25,7 +25,7 @@ router.get('/', authenticate, async (req, res) => {
 // Start a new reconciliation
 router.post('/start', authenticate, async (req, res) => {
   const { month, year } = req.body;
-  const { org_id } = req.user;
+  const { org_id } = req.profile;
 
   if (!month || !year) {
     return res.status(400).json({ error: 'Month and year are required.' });
