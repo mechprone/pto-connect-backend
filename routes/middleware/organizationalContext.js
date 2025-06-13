@@ -41,9 +41,9 @@ export const getUserOrgContext = async (req, res, next) => {
     req.user = user;
     req.profile = profile;
     req.orgId = profile.org_id;
-    req.userRole = profile.role;
+    req.userRole = profile.role || 'member'; // Default role if not specified
 
-    console.log(`✅ User context: ${user.id} (${profile.role}) in org ${profile.org_id}`);
+    console.log(`✅ User context: ${user.id} (${req.userRole}) in org ${profile.org_id}`);
     next();
   } catch (error) {
     console.error('❌ Organizational context middleware error:', error.message);
