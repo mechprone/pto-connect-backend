@@ -60,7 +60,12 @@ router.post('/start', authenticate, async (req, res) => {
     if (error) throw error;
     res.status(201).json({ success: true, data: data[0] });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to start reconciliation.', details: error.message });
+    console.error('❌ Failed to start reconciliation:', error.message);
+    res.status(500).json({ 
+      success: false,
+      errors: [{ message: 'Error fetching user profile' }],
+      details: error.message 
+    });
   }
 });
 
