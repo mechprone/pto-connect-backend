@@ -19,4 +19,4 @@ npm start
 ## Routes
 
 - `GET /` — health check
-- `GET /auth/check` — verifies Supabase token from Authorization header
+- `GET /auth/check` — verifies Supabase token from Authorization header# Force redeploy 06/12/2025 22:13:20
