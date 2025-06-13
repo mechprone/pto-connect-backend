@@ -5,36 +5,76 @@ import { verifySupabaseToken, supabase } from '../util/verifySupabaseToken.js';
  * Adds user, orgId, and userRole to req object
  */
 export const getUserOrgContext = async (req, res, next) => {
+  console.log('🔍 [DEBUG] getUserOrgContext middleware started');
+  console.log('🔍 [DEBUG] Request URL:', req.url);
+  console.log('🔍 [DEBUG] Request method:', req.method);
+  
   try {
     const authHeader = req.headers.authorization;
+    console.log('🔍 [DEBUG] Auth header present:', !!authHeader);
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ [DEBUG] Missing or malformed auth token');
       return res.status(401).json({ error: 'Missing or malformed auth token' });
     }
 
     const token = authHeader.split(' ')[1];
+    console.log('🔍 [DEBUG] Token extracted, length:', token.length);
+    
     const user = await verifySupabaseToken(token);
+    console.log('🔍 [DEBUG] User verified:', user.id);
 
     // Get user profile with organizational context
+    console.log('🔍 [DEBUG] Fetching profile for user:', user.id);
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('org_id, role, full_name, first_name, last_name, email, approved')
       .eq('id', user.id)
       .single();
 
+    console.log('🔍 [DEBUG] Profile query result:');
+    console.log('🔍 [DEBUG] - Profile data:', profile);
+    console.log('🔍 [DEBUG] - Profile error:', profileError);
+
     if (profileError) {
-      console.error(`❌ Error fetching profile for user ${user.id}:`, profileError.message);
-      return res.status(500).json({ error: 'Error fetching user profile' });
+      console.error(`❌ [DEBUG] Error fetching profile for user ${user.id}:`, profileError);
+      console.error(`❌ [DEBUG] Error code:`, profileError.code);
+      console.error(`❌ [DEBUG] Error message:`, profileError.message);
+      console.error(`❌ [DEBUG] Error details:`, profileError.details);
+      return res.status(500).json({ 
+        success: false,
+        errors: [{ message: 'Error fetching user profile' }],
+        debug: {
+          userId: user.id,
+          errorCode: profileError.code,
+          errorMessage: profileError.message
+        }
+      });
     }
 
     if (!profile) {
-      console.warn(`⚠️ No profile found for user ${user.id}`);
-      return res.status(404).json({ error: 'User profile not found' });
+      console.warn(`⚠️ [DEBUG] No profile found for user ${user.id}`);
+      return res.status(404).json({ 
+        success: false,
+        errors: [{ message: 'User profile not found' }],
+        debug: { userId: user.id }
+      });
     }
 
+    console.log('🔍 [DEBUG] Profile found:', {
+      userId: user.id,
+      orgId: profile.org_id,
+      role: profile.role,
+      email: profile.email
+    });
+
     if (!profile.org_id) {
-      console.warn(`⚠️ User ${user.id} has no organization assigned`);
-      return res.status(403).json({ error: 'User not assigned to an organization' });
+      console.warn(`⚠️ [DEBUG] User ${user.id} has no organization assigned`);
+      return res.status(403).json({ 
+        success: false,
+        errors: [{ message: 'User not assigned to an organization' }],
+        debug: { userId: user.id, profile }
+      });
     }
 
     // Add context to request object
@@ -43,11 +83,16 @@ export const getUserOrgContext = async (req, res, next) => {
     req.orgId = profile.org_id;
     req.userRole = profile.role || 'member'; // Default role if not specified
 
-    console.log(`✅ User context: ${user.id} (${req.userRole}) in org ${profile.org_id}`);
+    console.log(`✅ [DEBUG] User context set successfully: ${user.id} (${req.userRole}) in org ${profile.org_id}`);
     next();
   } catch (error) {
-    console.error('❌ Organizational context middleware error:', error.message);
-    res.status(401).json({ error: 'Invalid or expired token' });
+    console.error('❌ [DEBUG] Organizational context middleware error:', error);
+    console.error('❌ [DEBUG] Error stack:', error.stack);
+    res.status(401).json({ 
+      success: false,
+      errors: [{ message: 'Invalid or expired token' }],
+      debug: { errorMessage: error.message }
+    });
   }
 };
 

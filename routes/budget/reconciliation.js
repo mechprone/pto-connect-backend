@@ -24,23 +24,37 @@ router.get('/', authenticate, async (req, res) => {
 
 // Start a new reconciliation
 router.post('/start', authenticate, async (req, res) => {
+  console.log('🔍 [DEBUG] Reconciliation /start endpoint hit');
+  console.log('🔍 [DEBUG] Request body:', req.body);
+  console.log('🔍 [DEBUG] User profile:', req.profile);
+  console.log('🔍 [DEBUG] Org ID:', req.orgId);
+  
   const { month, year } = req.body;
   const { org_id } = req.profile;
 
+  console.log('🔍 [DEBUG] Extracted values:', { month, year, org_id });
+
   if (!month || !year) {
-    return res.status(400).json({ error: 'Month and year are required.' });
+    console.log('❌ [DEBUG] Missing month or year');
+    return res.status(400).json({ 
+      success: false,
+      errors: [{ message: 'Month and year are required.' }]
+    });
   }
 
   try {
+    console.log('🔍 [DEBUG] Checking if reconciliation tables exist...');
     // Check if reconciliation tables exist
     const { data: tableCheck, error: checkError } = await supabase
       .from('reconciliations')
       .select('id')
       .limit(1);
 
+    console.log('🔍 [DEBUG] Table check result:', { tableCheck, checkError });
+
     if (checkError && checkError.code === 'PGRST116') {
       // Table doesn't exist, return mock data for development
-      console.log('⚠️ Reconciliation tables not found, returning mock data');
+      console.log('⚠️ [DEBUG] Reconciliation tables not found, returning mock data');
       const mockReconciliation = {
         id: `mock-${Date.now()}`,
         org_id,
@@ -49,22 +63,38 @@ router.post('/start', authenticate, async (req, res) => {
         status: 'in_progress',
         created_at: new Date().toISOString()
       };
+      console.log('🔍 [DEBUG] Mock reconciliation:', mockReconciliation);
       return res.status(201).json({ success: true, data: mockReconciliation });
     }
 
+    console.log('🔍 [DEBUG] Tables exist, creating reconciliation record...');
     const { data, error } = await supabase
       .from('reconciliations')
       .insert([{ org_id, month, year, status: 'in_progress' }])
       .select();
 
-    if (error) throw error;
+    console.log('🔍 [DEBUG] Insert result:', { data, error });
+
+    if (error) {
+      console.error('❌ [DEBUG] Insert error:', error);
+      throw error;
+    }
+    
+    console.log('✅ [DEBUG] Reconciliation created successfully:', data[0]);
     res.status(201).json({ success: true, data: data[0] });
   } catch (error) {
-    console.error('❌ Failed to start reconciliation:', error.message);
+    console.error('❌ [DEBUG] Failed to start reconciliation:', error);
+    console.error('❌ [DEBUG] Error stack:', error.stack);
     res.status(500).json({ 
       success: false,
-      errors: [{ message: 'Error fetching user profile' }],
-      details: error.message 
+      errors: [{ message: 'Failed to start reconciliation' }],
+      debug: {
+        errorMessage: error.message,
+        errorCode: error.code,
+        orgId: org_id,
+        month,
+        year
+      }
     });
   }
 });
