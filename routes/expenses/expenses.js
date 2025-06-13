@@ -120,7 +120,7 @@ router.post('/submit', getUserOrgContext, addUserOrgToBody, requireVolunteer, up
         *,
         budget_categories(name, category_type),
         events(title),
-        user_profiles!expense_submissions_submitted_by_fkey(first_name, last_name)
+        profiles!expense_submissions_submitted_by_fkey(first_name, last_name)
       `)
       .single();
 
@@ -161,7 +161,7 @@ router.get('/pending', getUserOrgContext, canManageBudget, async (req, res) => {
         *,
         budget_categories(name, category_type),
         events(title),
-        user_profiles!expense_submissions_submitted_by_fkey(first_name, last_name, email)
+        profiles!expense_submissions_submitted_by_fkey(first_name, last_name, email)
       `)
       .eq('org_id', req.orgId)
       .eq('status', status)
@@ -238,7 +238,7 @@ router.put('/:id/approve', getUserOrgContext, canManageBudget, async (req, res) 
         *,
         budget_categories(name, category_type),
         events(title),
-        user_profiles!expense_submissions_submitted_by_fkey(first_name, last_name, email)
+        profiles!expense_submissions_submitted_by_fkey(first_name, last_name, email)
       `)
       .single();
 
@@ -340,7 +340,7 @@ router.put('/:id/reject', getUserOrgContext, canManageBudget, async (req, res) =
         *,
         budget_categories(name, category_type),
         events(title),
-        user_profiles!expense_submissions_submitted_by_fkey(first_name, last_name, email)
+        profiles!expense_submissions_submitted_by_fkey(first_name, last_name, email)
       `)
       .single();
 
@@ -387,7 +387,7 @@ router.get('/user/:userId?', getUserOrgContext, requireVolunteer, async (req, re
         *,
         budget_categories(name, category_type),
         events(title),
-        user_profiles!expense_submissions_approved_by_fkey(first_name, last_name)
+        profiles!expense_submissions_approved_by_fkey(first_name, last_name)
       `)
       .eq('org_id', req.orgId)
       .eq('submitted_by', userId)
@@ -495,7 +495,7 @@ async function sendExpenseSubmissionNotification(orgId, expense) {
     .select(`
       user_id,
       role_type,
-      user_profiles(first_name, last_name, email)
+      profiles(first_name, last_name, email)
     `)
     .eq('organization_id', orgId)
     .in('role_type', ['admin', 'board_member', 'committee_lead'])
