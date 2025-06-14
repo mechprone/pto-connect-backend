@@ -71,6 +71,18 @@ const ENDPOINT_LIMITS = {
   '/api/profile': { requests: 200, window: 15 * 60 * 1000 } // Profile operations
 };
 
+// Pre-create endpoint-specific limiters
+const endpointLimiters = {};
+for (const [endpoint, limit] of Object.entries(ENDPOINT_LIMITS)) {
+  endpointLimiters[endpoint] = createRateLimiter('free', limit);
+}
+
+// Pre-create tier-based limiters
+const freeLimiter = createRateLimiter('free');
+const standardLimiter = createRateLimiter('standard');
+const premiumLimiter = createRateLimiter('premium');
+const enterpriseLimiter = createRateLimiter('enterprise');
+
 /**
  * Create rate limiter based on tier and configuration
  */
@@ -148,27 +160,29 @@ export const createRateLimiter = (tier = 'standard', options = {}) => {
 export const smartRateLimit = (req, res, next) => {
   // Determine appropriate tier
   let tier = 'free';
-  
   if (req.apiKey) {
     tier = req.apiKey.rateLimitTier || 'standard';
   } else if (req.user) {
-    // Determine user tier based on organization subscription or role
     tier = getUserTier(req.user);
   }
 
   // Check for endpoint-specific limits
   const endpoint = req.route?.path || req.path;
-  const endpointLimit = ENDPOINT_LIMITS[endpoint];
-  
-  if (endpointLimit) {
-    // Use more restrictive endpoint-specific limit
-    const endpointLimiter = createRateLimiter(tier, endpointLimit);
-    return endpointLimiter(req, res, next);
+  if (endpointLimiters[endpoint]) {
+    return endpointLimiters[endpoint](req, res, next);
   }
 
-  // Use tier-based general limit
-  const generalLimiter = createRateLimiter(tier);
-  return generalLimiter(req, res, next);
+  // Use pre-created tier-based limiter
+  switch (tier) {
+    case 'enterprise':
+      return enterpriseLimiter(req, res, next);
+    case 'premium':
+      return premiumLimiter(req, res, next);
+    case 'standard':
+      return standardLimiter(req, res, next);
+    default:
+      return freeLimiter(req, res, next);
+  }
 };
 
 /**
@@ -186,9 +200,8 @@ export const enterpriseRateLimit = createRateLimiter('enterprise');
  * Admin operations rate limiter (more permissive for admin users)
  */
 export const adminRateLimit = (req, res, next) => {
-  const tier = req.apiKey?.rateLimitTier || getUserTier(req.user) || 'standard';
-  const limiter = createRateLimiter(tier, { requests: ENDPOINT_LIMITS['/api/admin/permissions'].requests });
-  return limiter(req, res, next);
+  // Use a more permissive limiter for admin operations
+  return premiumLimiter(req, res, next);
 };
 
 /**
