@@ -71,18 +71,6 @@ const ENDPOINT_LIMITS = {
   '/api/profile': { requests: 200, window: 15 * 60 * 1000 } // Profile operations
 };
 
-// Pre-create endpoint-specific limiters
-const endpointLimiters = {};
-for (const [endpoint, limit] of Object.entries(ENDPOINT_LIMITS)) {
-  endpointLimiters[endpoint] = createRateLimiter('free', limit);
-}
-
-// Pre-create tier-based limiters
-const freeLimiter = createRateLimiter('free');
-const standardLimiter = createRateLimiter('standard');
-const premiumLimiter = createRateLimiter('premium');
-const enterpriseLimiter = createRateLimiter('enterprise');
-
 /**
  * Create rate limiter based on tier and configuration
  */
@@ -153,6 +141,17 @@ export const createRateLimiter = (tier = 'standard', options = {}) => {
 
   return rateLimit(limiterOptions);
 };
+
+// Now create endpointLimiters and pre-created limiters
+const endpointLimiters = {};
+for (const [endpoint, limit] of Object.entries(ENDPOINT_LIMITS)) {
+  endpointLimiters[endpoint] = createRateLimiter('free', limit);
+}
+
+const freeLimiter = createRateLimiter('free');
+const standardLimiter = createRateLimiter('standard');
+const premiumLimiter = createRateLimiter('premium');
+const enterpriseLimiter = createRateLimiter('enterprise');
 
 /**
  * Smart rate limiter that adapts based on authentication method and tier
