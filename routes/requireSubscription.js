@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { supabase } from './util/verifySupabaseToken.js';
 
 /**
@@ -13,17 +14,20 @@ export const requireActiveSubscription = async (req, res, next) => {
     }
 
     const { data, error } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('org_id', orgId)
+      .from('organizations')
+      .select('subscription_status')
+      .eq('id', orgId)
       .single();
 
     if (error) {
       console.error('[Subscription Check] Supabase error:', error.message);
     }
 
-    if (!data || !['active', 'trialing'].includes(data.status)) {
-      console.warn(`[Subscription Check] Org ${orgId} blocked due to status: ${data?.status || 'N/A'}`);
+    const status = (data?.subscription_status || '').toLowerCase();
+    console.log(`[Subscription Check] Org ${orgId} subscription_status: ${status}`);
+
+    if (!data || !['active', 'trialing'].includes(status)) {
+      console.warn(`[Subscription Check] Org ${orgId} blocked due to status: ${status || 'N/A'}`);
       return res.status(403).json({ error: 'Subscription required or past due.' });
     }
 
