@@ -12,7 +12,7 @@ router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
       .from('fundraisers')
       .select('*')
       .eq('org_id', req.orgId)
-      .order('deadline', { ascending: true });
+      .order('end_date', { ascending: true });
 
     if (error) {
       console.error(`❌ Error fetching fundraisers for org ${req.orgId}:`, error.message);
