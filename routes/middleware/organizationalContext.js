@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { verifySupabaseToken, supabase } from '../util/verifySupabaseToken.js';
 
 /**
@@ -23,6 +24,7 @@ export const getUserOrgContext = async (req, res, next) => {
     
     const user = await verifySupabaseToken(token);
     console.log('🔍 [DEBUG] User verified:', user.id);
+    console.log('🔍 [DEBUG] User object:', user);
 
     // Get user profile with organizational context
     console.log('🔍 [DEBUG] Fetching profile for user:', user.id);
