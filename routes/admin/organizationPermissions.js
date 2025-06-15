@@ -87,6 +87,7 @@ router.get('/', getUserOrgContext, requireAdmin, async (req, res) => {
     }, {});
 
     console.log(`✅ Retrieved permission settings for org ${req.orgId}`);
+    // Return permissions and grouped at the top level for frontend compatibility
     res.json({
       permissions: permissionSettings,
       grouped: groupedSettings,
@@ -197,101 +198,14 @@ router.post('/bulk-update', getUserOrgContext, requireAdmin, async (req, res) =>
       return res.status(500).json({ error: 'Failed to update permissions' });
     }
 
-    console.log(`✅ Bulk updated ${data.length} permissions for org ${req.orgId} by admin ${req.user.id}`);
+    console.log(`✅ Updated ${data.length} permissions for org ${req.orgId} by admin ${req.user.id}`);
     res.json({
       success: true,
-      updated_count: data.length,
-      permissions: data
+      updated_permissions: data
     });
   } catch (err) {
     console.error('[organizationPermissions.js] POST /bulk-update error:', err.message);
-    res.status(500).json({ error: 'Failed to bulk update permissions' });
-  }
-});
-
-// DELETE /api/admin/organization-permissions/:permissionKey - Reset permission to default
-router.delete('/:permissionKey', getUserOrgContext, requireAdmin, async (req, res) => {
-  try {
-    const { permissionKey } = req.params;
-
-    const { error } = await supabase
-      .from('organization_permissions')
-      .delete()
-      .eq('org_id', req.orgId)
-      .eq('permission_key', permissionKey);
-
-    if (error) {
-      console.error(`❌ Error resetting permission ${permissionKey} for org ${req.orgId}:`, error.message);
-      return res.status(500).json({ error: 'Failed to reset permission' });
-    }
-
-    console.log(`✅ Reset permission ${permissionKey} to default for org ${req.orgId} by admin ${req.user.id}`);
-    res.json({
-      success: true,
-      message: 'Permission reset to default'
-    });
-  } catch (err) {
-    console.error('[organizationPermissions.js] DELETE /:permissionKey error:', err.message);
-    res.status(500).json({ error: 'Failed to reset permission' });
-  }
-});
-
-// GET /api/admin/organization-permissions/user/:userId - Get specific user's permissions
-router.get('/user/:userId', getUserOrgContext, requireAdmin, async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Verify user belongs to the organization
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_id, org_id, role, first_name, last_name')
-      .eq('user_id', userId)
-      .eq('org_id', req.orgId)
-      .single();
-
-    if (profileError || !userProfile) {
-      return res.status(404).json({ error: 'User not found in organization' });
-    }
-
-    // Get all permission templates
-    const { data: templates, error: templatesError } = await supabase
-      .from('organization_permission_templates')
-      .select('permission_key, module_name, permission_name');
-
-    if (templatesError) {
-      console.error('Error fetching permission templates:', templatesError.message);
-      return res.status(500).json({ error: 'Failed to fetch permissions' });
-    }
-
-    // Check each permission for the user
-    const userPermissions = {};
-    
-    for (const template of templates) {
-      const { data: hasPermission, error } = await supabase
-        .rpc('user_has_org_permission', {
-          user_id_param: userId,
-          permission_key_param: template.permission_key
-        });
-
-      if (!error) {
-        if (!userPermissions[template.module_name]) {
-          userPermissions[template.module_name] = {};
-        }
-        userPermissions[template.module_name][template.permission_key] = {
-          has_permission: hasPermission,
-          permission_name: template.permission_name
-        };
-      }
-    }
-
-    console.log(`✅ Retrieved permissions for user ${userId} in org ${req.orgId}`);
-    res.json({
-      user: userProfile,
-      permissions: userPermissions
-    });
-  } catch (err) {
-    console.error('[organizationPermissions.js] GET /user/:userId error:', err.message);
-    res.status(500).json({ error: 'Failed to get user permissions' });
+    res.status(500).json({ error: 'Failed to update permissions' });
   }
 });
 
