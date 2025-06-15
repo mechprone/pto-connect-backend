@@ -82,6 +82,7 @@ import testRoutes from './routes/ai/test.js'
 import aiRoutes from './routes/ai/ai.js'
 import apiKeyRoutes from './routes/apiKeys.js'
 import monitoringRoutes from './routes/monitoring.js'
+import enhancedFundraiserRoutes from './routes/fundraiser/enhanced-fundraiser.js'
 
 // API route registration
 app.use('/api/signup', signupRoutes)
@@ -102,6 +103,7 @@ app.use('/api/event', eventRoutes)
 app.use('/api/event-ideas', generateEventIdeaRoutes)
 
 app.use('/api/fundraiser', fundraiserRoutes)
+app.use('/api/fundraiser', enhancedFundraiserRoutes)
 app.use('/api/budget', budgetRoutes)
 app.use('/api/budget/categories', budgetCategoryRoutes)
 app.use('/api/budget/reconciliation', reconciliationRoutes)
