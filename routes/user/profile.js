@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import express from 'express';
 import { supabase } from '../util/verifySupabaseToken.js';
 import { requireActiveSubscription } from '../requireSubscription.js';
@@ -7,7 +8,7 @@ import { requireAdmin, canManageUsers } from '../middleware/roleBasedAccess.js';
 const router = express.Router();
 
 // ✅ GET /api/profiles – Get all users in organization (admin only)
-router.get('/', getUserOrgContext, canManageUsers, async (req, res) => {
+router.get('/', requireActiveSubscription, getUserOrgContext, canManageUsers, async (req, res) => {
   try {
     const { data: profiles, error } = await supabase
       .from('profiles')

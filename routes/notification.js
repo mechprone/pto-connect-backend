@@ -1,6 +1,8 @@
+/* eslint-disable no-console */
 import express from 'express';
 import { supabase, verifySupabaseToken } from './util/verifySupabaseToken.js';
 import { requireActiveSubscription } from './requireSubscription.js';
+import { getUserOrgContext } from './middleware/organizationalContext.js';
 
 const router = express.Router();
 
@@ -20,15 +22,14 @@ const withAuth = async (req, res, next) => {
 };
 
 // 🔔 GET /api/notifications – Get unread notifications
-router.get('/', withAuth, requireActiveSubscription, async (req, res) => {
+router.get('/', requireActiveSubscription, getUserOrgContext, async (req, res) => {
   try {
-    const { user } = req;
-
+    const { user, orgId } = req;
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .or(`recipient_id.eq.${user.id},recipient_id.is.null`)
-      .eq('org_id', user.user_metadata?.org_id)
+      .eq('org_id', orgId)
       .eq('is_read', false)
       .order('created_at', { ascending: false });
 
@@ -41,10 +42,9 @@ router.get('/', withAuth, requireActiveSubscription, async (req, res) => {
 });
 
 // 🔔 PATCH /api/notifications/:id/read – Mark as read
-router.patch('/:id/read', withAuth, requireActiveSubscription, async (req, res) => {
+router.patch('/:id/read', requireActiveSubscription, getUserOrgContext, async (req, res) => {
   try {
     const { id } = req.params;
-
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -59,15 +59,14 @@ router.patch('/:id/read', withAuth, requireActiveSubscription, async (req, res) 
 });
 
 // 🔔 DELETE /api/notifications/clear – Clear all for org/user
-router.delete('/clear', withAuth, requireActiveSubscription, async (req, res) => {
+router.delete('/clear', requireActiveSubscription, getUserOrgContext, async (req, res) => {
   try {
-    const { user } = req;
-
+    const { user, orgId } = req;
     const { error } = await supabase
       .from('notifications')
       .delete()
       .or(`recipient_id.eq.${user.id},recipient_id.is.null`)
-      .eq('org_id', user.user_metadata?.org_id);
+      .eq('org_id', orgId);
 
     if (error) throw error;
     res.status(204).send();
