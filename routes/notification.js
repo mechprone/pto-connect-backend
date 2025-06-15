@@ -22,7 +22,7 @@ const withAuth = async (req, res, next) => {
 };
 
 // 🔔 GET /api/notifications – Get unread notifications
-router.get('/', requireActiveSubscription, getUserOrgContext, async (req, res) => {
+router.get('/', getUserOrgContext, requireActiveSubscription, async (req, res) => {
   try {
     const { user, orgId } = req;
     const { data, error } = await supabase
@@ -42,7 +42,7 @@ router.get('/', requireActiveSubscription, getUserOrgContext, async (req, res) =
 });
 
 // 🔔 PATCH /api/notifications/:id/read – Mark as read
-router.patch('/:id/read', requireActiveSubscription, getUserOrgContext, async (req, res) => {
+router.patch('/:id/read', getUserOrgContext, requireActiveSubscription, async (req, res) => {
   try {
     const { id } = req.params;
     const { error } = await supabase
@@ -59,7 +59,7 @@ router.patch('/:id/read', requireActiveSubscription, getUserOrgContext, async (r
 });
 
 // 🔔 DELETE /api/notifications/clear – Clear all for org/user
-router.delete('/clear', requireActiveSubscription, getUserOrgContext, async (req, res) => {
+router.delete('/clear', getUserOrgContext, requireActiveSubscription, async (req, res) => {
   try {
     const { user, orgId } = req;
     const { error } = await supabase

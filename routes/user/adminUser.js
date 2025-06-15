@@ -8,7 +8,7 @@ import { canManageUsers } from '../middleware/roleBasedAccess.js';
 const router = express.Router();
 
 // 🔐 GET /api/admin-users – Get all users in organization (admin only)
-router.get('/', requireActiveSubscription, getUserOrgContext, canManageUsers, async (req, res) => {
+router.get('/', getUserOrgContext, requireActiveSubscription, canManageUsers, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
