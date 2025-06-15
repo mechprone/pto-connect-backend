@@ -17,7 +17,6 @@ router.get('/categories', getUserOrgContext, requireVolunteer, async (req, res) 
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error('[enhanced-fundraiser.js] GET /categories error:', err.message);
     res.status(500).json({ error: 'Failed to fetch categories' });
   }
 });
@@ -40,7 +39,6 @@ router.post('/categories', getUserOrgContext, addUserOrgToBody, canManageEvents,
     if (error) throw error;
     res.status(201).json(data);
   } catch (err) {
-    console.error('[enhanced-fundraiser.js] POST /categories error:', err.message);
     res.status(500).json({ error: 'Failed to create category' });
   }
 });
@@ -57,7 +55,6 @@ router.get('/:id/tiers', getUserOrgContext, requireVolunteer, async (req, res) =
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error('[enhanced-fundraiser.js] GET /:id/tiers error:', err.message);
     res.status(500).json({ error: 'Failed to fetch donation tiers' });
   }
 });
@@ -98,7 +95,6 @@ router.post('/:id/tiers', getUserOrgContext, canManageEvents, async (req, res) =
     if (error) throw error;
     res.status(201).json(data);
   } catch (err) {
-    console.error('[enhanced-fundraiser.js] POST /:id/tiers error:', err.message);
     res.status(500).json({ error: 'Failed to create donation tier' });
   }
 });
@@ -115,7 +111,6 @@ router.get('/:id/analytics', getUserOrgContext, canManageEvents, async (req, res
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error('[enhanced-fundraiser.js] GET /:id/analytics error:', err.message);
     res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 });
@@ -154,7 +149,6 @@ router.post('/:id/share', getUserOrgContext, async (req, res) => {
     if (error) throw error;
     res.status(201).json(data);
   } catch (err) {
-    console.error('[enhanced-fundraiser.js] POST /:id/share error:', err.message);
     res.status(500).json({ error: 'Failed to record share' });
   }
 });
@@ -190,8 +184,100 @@ router.put('/:id/status', getUserOrgContext, canManageEvents, async (req, res) =
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error('[enhanced-fundraiser.js] PUT /:id/status error:', err.message);
     res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
+// List all school years with fundraisers for the org
+router.get('/analytics/years', getUserOrgContext, requireVolunteer, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('fundraisers')
+      .select('start_date')
+      .eq('org_id', req.orgId);
+    if (error) throw error;
+    // Extract years from start_date
+    const years = Array.from(new Set((data || []).map(row => new Date(row.start_date).getFullYear()))).sort((a, b) => b - a);
+    res.json(years);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch years' });
+  }
+});
+
+// Aggregate analytics for all fundraisers in a year
+router.get('/analytics', getUserOrgContext, requireVolunteer, async (req, res) => {
+  try {
+    const { year, fundraiserId } = req.query;
+    let query = supabase
+      .from('fundraiser_analytics')
+      .select('*')
+      .eq('org_id', req.orgId);
+    if (year) query = query.gte('date', `${year}-08-01`).lte('date', `${parseInt(year) + 1}-06-30`);
+    if (fundraiserId) query = query.eq('fundraiser_id', fundraiserId);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+// List all school years with donors for the org
+router.get('/donors/years', getUserOrgContext, requireVolunteer, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('donations')
+      .select('created_at')
+      .eq('org_id', req.orgId);
+    if (error) throw error;
+    const years = Array.from(new Set((data || []).map(row => new Date(row.created_at).getFullYear()))).sort((a, b) => b - a);
+    res.json(years);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch donor years' });
+  }
+});
+
+// Aggregate donor info for all fundraisers in a year or by fundraiser/type
+router.get('/donors', getUserOrgContext, requireVolunteer, async (req, res) => {
+  try {
+    const { year, fundraiserId, type } = req.query;
+    let query = supabase
+      .from('donations')
+      .select('*')
+      .eq('org_id', req.orgId);
+    if (year) query = query.gte('created_at', `${year}-08-01`).lte('created_at', `${parseInt(year) + 1}-06-30`);
+    if (fundraiserId) query = query.eq('fundraiser_id', fundraiserId);
+    if (type) query = query.eq('donor_type', type);
+    const { data, error } = await query;
+    if (error) throw error;
+    // Aggregate donor info for charts
+    const donorSummary = {
+      totalDonations: data.reduce((sum, d) => sum + Number(d.amount || 0), 0),
+      donorTypes: {},
+      donors: {},
+    };
+    data.forEach(d => {
+      donorSummary.donorTypes[d.donor_type] = (donorSummary.donorTypes[d.donor_type] || 0) + Number(d.amount || 0);
+      donorSummary.donors[d.donor_id] = (donorSummary.donors[d.donor_id] || 0) + Number(d.amount || 0);
+    });
+    res.json(donorSummary);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch donor info' });
+  }
+});
+
+// List all donor types
+router.get('/donor-types', getUserOrgContext, requireVolunteer, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('donations')
+      .select('donor_type')
+      .eq('org_id', req.orgId);
+    if (error) throw error;
+    const types = Array.from(new Set((data || []).map(row => row.donor_type))).filter(Boolean);
+    res.json(types);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch donor types' });
   }
 });
 
