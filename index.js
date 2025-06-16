@@ -64,6 +64,7 @@ import eventRoutes from './routes/event/event.js'
 import generateEventIdeaRoutes from './routes/event/generateEventIdea.js'
 
 import fundraiserRoutes from './routes/fundraiser/fundraiser.js'
+import fundraiserAnalyticsRoutes from './routes/fundraiser/analytics.js'
 import budgetRoutes from './routes/budget/budget.js'
 import budgetCategoryRoutes from './routes/budget/categories.js'
 import expenseRoutes from './routes/expenses/expenses.js'
@@ -106,6 +107,7 @@ app.use('/api/event-ideas', generateEventIdeaRoutes)
 
 app.use('/api/fundraiser', fundraiserRoutes)
 app.use('/api/fundraiser', enhancedFundraiserRoutes)
+app.use('/api/fundraiser/analytics', fundraiserAnalyticsRoutes)
 app.use('/api/reports', reportsRoutes)
 app.use('/api/budget', budgetRoutes)
 app.use('/api/budget/categories', budgetCategoryRoutes)
