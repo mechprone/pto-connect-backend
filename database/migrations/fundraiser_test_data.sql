@@ -144,4 +144,13 @@ BEGIN
         'Books', 100, 3000.00, 'books',
         'new', 'Book fair inventory', '2024-03-01', 'received',
         admin_user_id, NOW(), NOW());
+
+    -- Insert test data for fundraisers (for frontend display)
+    INSERT INTO fundraisers (
+        id, org_id, title, description, goal, current_total, type, is_active, start_date, end_date, created_by, created_at, updated_at
+    ) VALUES
+        (gen_random_uuid(), v_org_id, 'Annual Fundraiser 2024', 'Main annual fundraising campaign', 50000.00, 35000.00, 'donation', true, '2024-01-01', '2024-12-31', admin_user_id, NOW(), NOW()),
+        (gen_random_uuid(), v_org_id, 'Spring Book Fair', 'Book fair fundraiser', 10000.00, 7500.00, 'donation', true, '2024-03-01', '2024-03-15', admin_user_id, NOW(), NOW()),
+        (gen_random_uuid(), v_org_id, 'Teacher Wish List', 'Support classroom needs', 5000.00, 3000.00, 'donation', true, '2024-01-01', '2024-06-30', admin_user_id, NOW(), NOW()),
+        (gen_random_uuid(), v_org_id, 'Corporate Sponsorship Program', 'Business partnership program', 25000.00, 15000.00, 'donation', true, '2024-01-01', '2024-12-31', admin_user_id, NOW(), NOW());
 END $$; 
