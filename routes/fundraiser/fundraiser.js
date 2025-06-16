@@ -27,6 +27,35 @@ router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
   }
 });
 
+// GET /api/fundraiser/:id – Get a specific fundraiser by ID
+router.get('/:id', getUserOrgContext, requireVolunteer, async (req, res) => {
+  try {
+    const fundraiserId = req.params.id;
+
+    const { data, error } = await supabase
+      .from('fundraisers')
+      .select('*')
+      .eq('id', fundraiserId)
+      .eq('org_id', req.orgId)
+      .single();
+
+    if (error) {
+      console.error(`❌ Error fetching fundraiser ${fundraiserId}:`, error.message);
+      return res.status(500).json({ error: 'Failed to fetch fundraiser' });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: 'Fundraiser not found' });
+    }
+
+    console.log(`✅ Retrieved fundraiser ${fundraiserId} for org ${req.orgId}`);
+    res.json(data);
+  } catch (err) {
+    console.error('[fundraiser.js] GET /fundraiser/:id error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch fundraiser' });
+  }
+});
+
 // POST /api/fundraiser – Create new fundraiser (committee lead+ required)
 router.post('/', getUserOrgContext, addUserOrgToBody, canManageEvents, async (req, res) => {
   try {
