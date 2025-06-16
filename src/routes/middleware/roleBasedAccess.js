@@ -1,4 +1,4 @@
-import { pool } from '../../db.js';
+import { supabase } from '../../utils/supabaseClient.js';
 
 export const canViewReports = async (req, res, next) => {
   try {
@@ -7,21 +7,16 @@ export const canViewReports = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Check if user has admin role or report viewing permissions
-    const query = `
-      SELECT r.name as role_name
-      FROM users u
-      JOIN user_roles ur ON u.id = ur.user_id
-      JOIN roles r ON ur.role_id = r.id
-      WHERE u.id = $1 AND (r.name = 'admin' OR r.name = 'reports_viewer')
-    `;
-    
-    const result = await pool.query(query, [userId]);
-    
-    if (result.rows.length === 0) {
+    // Check if user has admin or reports_viewer role
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('roles!inner(name)')
+      .eq('user_id', userId)
+      .in('roles.name', ['admin', 'reports_viewer']);
+    if (error) throw error;
+    if (!data || data.length === 0) {
       return res.status(403).json({ error: 'Insufficient permissions to view reports' });
     }
-
     next();
   } catch (error) {
     console.error('Error checking report permissions:', error);

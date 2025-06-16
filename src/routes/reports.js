@@ -1,6 +1,6 @@
 import express from 'express';
 import { canViewReports } from './middleware/roleBasedAccess.js';
-import { pool } from '../db.js';
+import { supabase } from '../utils/supabaseClient.js';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
 
@@ -9,64 +9,58 @@ const router = express.Router();
 // Helper to get report data
 async function getReportData(startDate, endDate) {
   // Get summary data
-  const summaryQuery = `
-    SELECT 
-      COUNT(*) as total_events,
-      SUM(revenue) as total_revenue,
-      AVG(attendance) as average_attendance
-    FROM events
-    WHERE date BETWEEN $1 AND $2
-  `;
-  const summaryResult = await pool.query(summaryQuery, [startDate, endDate]);
-  const summary = summaryResult.rows[0];
+  const { data: summaryData, error: summaryError } = await supabase
+    .from('events')
+    .select('revenue, attendance')
+    .gte('date', startDate)
+    .lte('date', endDate);
+  if (summaryError) throw summaryError;
+
+  const totalEvents = summaryData.length;
+  const totalRevenue = summaryData.reduce((sum, row) => sum + (row.revenue || 0), 0);
+  const averageAttendance = summaryData.length > 0 ? Math.round(summaryData.reduce((sum, row) => sum + (row.attendance || 0), 0) / summaryData.length) : 0;
 
   // Get time series data
-  const timeSeriesQuery = `
-    SELECT 
-      date,
-      COUNT(*) as events,
-      SUM(revenue) as revenue,
-      AVG(attendance) as attendance
-    FROM events
-    WHERE date BETWEEN $1 AND $2
-    GROUP BY date
-    ORDER BY date
-  `;
-  const timeSeriesResult = await pool.query(timeSeriesQuery, [startDate, endDate]);
-  const timeSeries = timeSeriesResult.rows;
+  const { data: timeSeriesData, error: timeSeriesError } = await supabase
+    .from('events')
+    .select('date, revenue, attendance')
+    .gte('date', startDate)
+    .lte('date', endDate);
+  if (timeSeriesError) throw timeSeriesError;
+
+  // Group by date
+  const timeSeries = Object.values(timeSeriesData.reduce((acc, row) => {
+    if (!acc[row.date]) acc[row.date] = { date: row.date, events: 0, revenue: 0, attendance: 0 };
+    acc[row.date].events += 1;
+    acc[row.date].revenue += row.revenue || 0;
+    acc[row.date].attendance += row.attendance || 0;
+    return acc;
+  }, {}));
+  timeSeries.forEach(row => {
+    row.attendance = Math.round(row.attendance / row.events);
+  });
 
   // Get detailed data
-  const detailsQuery = `
-    SELECT 
-      date,
-      event_name,
-      attendance,
-      revenue,
-      status
-    FROM events
-    WHERE date BETWEEN $1 AND $2
-    ORDER BY date DESC
-  `;
-  const detailsResult = await pool.query(detailsQuery, [startDate, endDate]);
-  const details = detailsResult.rows;
+  const { data: details, error: detailsError } = await supabase
+    .from('events')
+    .select('date, event_name, attendance, revenue, status')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: false });
+  if (detailsError) throw detailsError;
 
   return {
     summary: {
-      totalEvents: parseInt(summary.total_events) || 0,
-      totalRevenue: parseFloat(summary.total_revenue) || 0,
-      averageAttendance: Math.round(parseFloat(summary.average_attendance)) || 0
+      totalEvents,
+      totalRevenue,
+      averageAttendance
     },
-    timeSeries: timeSeries.map(row => ({
-      date: row.date,
-      events: parseInt(row.events),
-      revenue: parseFloat(row.revenue),
-      attendance: Math.round(parseFloat(row.attendance))
-    })),
+    timeSeries,
     details: details.map(row => ({
       date: row.date,
       eventName: row.event_name,
-      attendance: parseInt(row.attendance),
-      revenue: parseFloat(row.revenue),
+      attendance: row.attendance,
+      revenue: row.revenue,
       status: row.status
     }))
   };
