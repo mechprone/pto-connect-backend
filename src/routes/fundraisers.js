@@ -22,4 +22,14 @@ router.get('/:id', async (req, res) => {
   res.json(data);
 });
 
+// GET /api/fundraisers - fetch all fundraisers (optionally filter by org_id)
+router.get('/', async (req, res) => {
+  const { org_id } = req.query;
+  let query = supabase.from('fundraisers').select('*');
+  if (org_id) query = query.eq('org_id', org_id);
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
 export default router; 
