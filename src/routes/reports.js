@@ -7,18 +7,36 @@ import ExcelJS from 'exceljs';
 const router = express.Router();
 
 // Helper to get report data
-async function getReportData(startDate, endDate) {
+async function getReportData(startDate, endDate, fundraiserId = null) {
   // Get summary data
   const { data: summaryData, error: summaryError } = await supabase
     .from('events')
-    .select('revenue, attendance')
+    .select('revenue, attendance, fundraiser_id')
     .gte('date', startDate)
-    .lte('date', endDate);
+    .lte('date', endDate)
+    .maybeSingle();
   if (summaryError) throw summaryError;
 
-  const totalEvents = summaryData.length;
-  const totalRevenue = summaryData.reduce((sum, row) => sum + (row.revenue || 0), 0);
-  const averageAttendance = summaryData.length > 0 ? Math.round(summaryData.reduce((sum, row) => sum + (row.attendance || 0), 0) / summaryData.length) : 0;
+  // Filter by fundraiserId if provided
+  const filteredEvents = fundraiserId
+    ? summaryData.filter(row => row.fundraiser_id === fundraiserId)
+    : summaryData;
+
+  const totalEvents = filteredEvents.length;
+  const totalRevenue = filteredEvents.reduce((sum, row) => sum + (row.revenue || 0), 0);
+  const averageAttendance = filteredEvents.length > 0 ? Math.round(filteredEvents.reduce((sum, row) => sum + (row.attendance || 0), 0) / filteredEvents.length) : 0;
+
+  // Get total expenses for the same date range and fundraiser
+  let expenseQuery = supabase
+    .from('expenses')
+    .select('amount, fundraiser_id')
+    .gte('expense_date', startDate)
+    .lte('expense_date', endDate);
+  if (fundraiserId) expenseQuery = expenseQuery.eq('fundraiser_id', fundraiserId);
+  const { data: expensesData, error: expensesError } = await expenseQuery;
+  if (expensesError) throw expensesError;
+  const totalExpenses = expensesData.reduce((sum, row) => sum + (row.amount || 0), 0);
+  const netRaised = totalRevenue - totalExpenses;
 
   // Get time series data
   const { data: timeSeriesData, error: timeSeriesError } = await supabase
@@ -53,7 +71,9 @@ async function getReportData(startDate, endDate) {
     summary: {
       totalEvents,
       totalRevenue,
-      averageAttendance
+      averageAttendance,
+      totalExpenses,
+      netRaised
     },
     timeSeries,
     details: details.map(row => ({
@@ -131,6 +151,8 @@ router.post('/download/xlsx', canViewReports, async (req, res) => {
     sheet.addRow(['Total Events', reportData.summary.totalEvents]);
     sheet.addRow(['Total Revenue', reportData.summary.totalRevenue]);
     sheet.addRow(['Average Attendance', reportData.summary.averageAttendance]);
+    sheet.addRow(['Total Expenses', reportData.summary.totalExpenses]);
+    sheet.addRow(['Net Raised', reportData.summary.netRaised]);
     sheet.addRow([]);
     // Details
     sheet.addRow(['Date', 'Event Name', 'Attendance', 'Revenue', 'Status']);
