@@ -84,6 +84,7 @@ import apiKeyRoutes from './routes/apiKeys.js'
 import monitoringRoutes from './routes/monitoring.js'
 import enhancedFundraiserRoutes from './routes/fundraiser/enhanced-fundraiser.js'
 import reportsRoutes from './src/routes/reports.js'
+import fundraisersRoutes from './src/routes/fundraisers.js'
 
 // API route registration
 app.use('/api/signup', signupRoutes)
@@ -122,6 +123,8 @@ app.use('/api/notifications', notificationRoutes)
 
 app.use('/api/test', testRoutes)
 app.use('/api/ai', aiRoutes)
+
+app.use('/api/fundraisers', fundraisersRoutes)
 
 // Health check endpoints
 app.get('/', (req, res) => {
