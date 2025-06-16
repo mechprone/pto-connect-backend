@@ -84,8 +84,6 @@ import aiRoutes from './routes/ai/ai.js'
 import apiKeyRoutes from './routes/apiKeys.js'
 import monitoringRoutes from './routes/monitoring.js'
 import enhancedFundraiserRoutes from './routes/fundraiser/enhanced-fundraiser.js'
-import reportsRoutes from './src/routes/reports.js'
-import fundraisersRoutes from './src/routes/fundraisers.js'
 
 // API route registration
 app.use('/api/signup', signupRoutes)
@@ -108,7 +106,6 @@ app.use('/api/event-ideas', generateEventIdeaRoutes)
 app.use('/api/fundraiser', fundraiserRoutes)
 app.use('/api/fundraiser', enhancedFundraiserRoutes)
 app.use('/api/fundraiser/analytics', fundraiserAnalyticsRoutes)
-app.use('/api/reports', reportsRoutes)
 app.use('/api/budget', budgetRoutes)
 app.use('/api/budget/categories', budgetCategoryRoutes)
 app.use('/api/budget/reconciliation', reconciliationRoutes)
@@ -125,8 +122,6 @@ app.use('/api/notifications', notificationRoutes)
 
 app.use('/api/test', testRoutes)
 app.use('/api/ai', aiRoutes)
-
-app.use('/api/fundraisers', fundraisersRoutes)
 
 // Health check endpoints
 app.get('/', (req, res) => {
