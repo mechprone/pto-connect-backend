@@ -36,25 +36,27 @@ router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
     const { data, error } = await query;
 
     if (error) {
-      console.error(`❌ Error fetching email templates for org ${req.orgId}:`, error.message);
+      console.error(`❌ Error fetching templates for org ${req.orgId}:`, error.message);
       return res.status(500).json({ 
         success: false,
-        error: 'Failed to fetch email templates',
+        error: 'Failed to fetch templates',
         details: error.message 
       });
     }
 
-    console.log(`✅ Retrieved ${data.length} email templates for org ${req.orgId}`);
+    console.log(`✅ Retrieved ${data.length} templates for org ${req.orgId}`);
     res.json({
       success: true,
-      data: data,
-      count: data.length
+      data: {
+        myTemplates: data.filter(t => !t.is_shared),
+        sharedTemplates: data.filter(t => t.is_shared)
+      }
     });
   } catch (err) {
     console.error('[templates.js] GET error:', err.message);
     res.status(500).json({ 
       success: false,
-      error: 'Failed to fetch email templates' 
+      error: 'Failed to fetch templates' 
     });
   }
 });
@@ -131,7 +133,7 @@ router.get('/:id', getUserOrgContext, requireVolunteer, async (req, res) => {
   }
 });
 
-// POST /api/communications/templates - Create new email template
+// POST /api/communications/templates - Create new template
 router.post('/', getUserOrgContext, addUserOrgToBody, canManageCommunications, async (req, res) => {
   try {
     const { 
@@ -181,29 +183,29 @@ router.post('/', getUserOrgContext, addUserOrgToBody, canManageCommunications, a
           error: 'Template with this name already exists' 
         });
       }
-      console.error(`❌ Error creating email template for org ${req.orgId}:`, error.message);
+      console.error(`❌ Error creating template for org ${req.orgId}:`, error.message);
       return res.status(500).json({ 
         success: false,
-        error: 'Failed to create email template' 
+        error: 'Failed to create template' 
       });
     }
 
-    console.log(`✅ Email template created for org ${req.orgId} by user ${req.user.id}`);
+    console.log(`✅ Template created for org ${req.orgId} by user ${req.user.id}`);
     res.status(201).json({
       success: true,
       data: data,
-      message: 'Email template created successfully'
+      message: 'Template created successfully'
     });
   } catch (err) {
     console.error('[templates.js] POST error:', err.message);
     res.status(500).json({ 
       success: false,
-      error: 'Failed to create email template' 
+      error: 'Failed to create template' 
     });
   }
 });
 
-// PUT /api/communications/templates/:id - Update email template
+// PUT /api/communications/templates/:id - Update template
 router.put('/:id', getUserOrgContext, canManageCommunications, async (req, res) => {
   try {
     const templateId = req.params.id;
@@ -272,12 +274,6 @@ router.put('/:id', getUserOrgContext, canManageCommunications, async (req, res) 
       .single();
 
     if (error) {
-      if (error.code === '23505') { // Unique constraint violation
-        return res.status(409).json({ 
-          success: false,
-          error: 'Template with this name already exists' 
-        });
-      }
       console.error(`❌ Error updating template ${templateId}:`, error.message);
       return res.status(500).json({ 
         success: false,
@@ -285,7 +281,7 @@ router.put('/:id', getUserOrgContext, canManageCommunications, async (req, res) 
       });
     }
 
-    console.log(`✅ Template ${templateId} updated in org ${req.orgId} by user ${req.user.id}`);
+    console.log(`✅ Template ${templateId} updated by user ${req.user.id}`);
     res.json({
       success: true,
       data: data,
@@ -300,7 +296,7 @@ router.put('/:id', getUserOrgContext, canManageCommunications, async (req, res) 
   }
 });
 
-// DELETE /api/communications/templates/:id - Delete email template
+// DELETE /api/communications/templates/:id - Delete template
 router.delete('/:id', getUserOrgContext, canManageCommunications, async (req, res) => {
   try {
     const templateId = req.params.id;
@@ -362,83 +358,6 @@ router.delete('/:id', getUserOrgContext, canManageCommunications, async (req, re
   }
 });
 
-// POST /api/communications/templates/:id/duplicate - Duplicate template
-router.post('/:id/duplicate', getUserOrgContext, addUserOrgToBody, canManageCommunications, async (req, res) => {
-  try {
-    const templateId = req.params.id;
-    const { name } = req.body;
-
-    // Get original template
-    const { data: originalTemplate, error: fetchError } = await supabase
-      .from('communications_templates')
-      .select('*')
-      .eq('id', templateId)
-      .eq('org_id', req.orgId)
-      .single();
-
-    if (fetchError) {
-      if (fetchError.code === 'PGRST116') {
-        return res.status(404).json({ 
-          success: false,
-          error: 'Template not found' 
-        });
-      }
-      console.error(`❌ Error fetching template ${templateId}:`, fetchError.message);
-      return res.status(500).json({ 
-        success: false,
-        error: 'Error fetching template' 
-      });
-    }
-
-    // Create duplicate
-    const { data, error } = await supabase
-      .from('communications_templates')
-      .insert([{
-        name: name || `${originalTemplate.name} (Copy)`,
-        category: originalTemplate.category,
-        description: originalTemplate.description,
-        design_json: originalTemplate.design_json,
-        html_content: originalTemplate.html_content,
-        thumbnail_url: originalTemplate.thumbnail_url,
-        is_shared: false, // Duplicates are not shared by default
-        template_type: originalTemplate.template_type,
-        sharing_level: originalTemplate.sharing_level,
-        shared_with_orgs: originalTemplate.shared_with_orgs,
-        created_by: req.user.id,
-        org_id: req.body.org_id
-      }])
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === '23505') { // Unique constraint violation
-        return res.status(409).json({ 
-          success: false,
-          error: 'Template with this name already exists' 
-        });
-      }
-      console.error(`❌ Error duplicating template ${templateId}:`, error.message);
-      return res.status(500).json({ 
-        success: false,
-        error: 'Failed to duplicate template' 
-      });
-    }
-
-    console.log(`✅ Template ${templateId} duplicated in org ${req.orgId} by user ${req.user.id}`);
-    res.status(201).json({
-      success: true,
-      data: data,
-      message: 'Template duplicated successfully'
-    });
-  } catch (err) {
-    console.error('[templates.js] POST duplicate error:', err.message);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to duplicate template' 
-    });
-  }
-});
-
 // POST /api/communications/templates/:id/use - Increment usage count
 router.post('/:id/use', getUserOrgContext, requireVolunteer, async (req, res) => {
   try {
@@ -477,5 +396,5 @@ router.post('/:id/use', getUserOrgContext, requireVolunteer, async (req, res) =>
   }
 });
 
-console.log('[templates.js] Email template routes loaded successfully');
+console.log('[templates.js] Template routes loaded successfully');
 export default router;

@@ -4,7 +4,7 @@
 -- =====================================================
 
 -- Email templates with brand customization
-CREATE TABLE IF NOT EXISTS email_templates (
+CREATE TABLE IF NOT EXISTS communications_templates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -21,14 +21,14 @@ CREATE TABLE IF NOT EXISTS email_templates (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   -- Indexes for performance
-  CONSTRAINT email_templates_name_org_unique UNIQUE(name, org_id)
+  CONSTRAINT communications_templates_name_org_unique UNIQUE(name, org_id)
 );
 
--- Create indexes for email_templates
-CREATE INDEX IF NOT EXISTS idx_email_templates_org_id ON email_templates(org_id);
-CREATE INDEX IF NOT EXISTS idx_email_templates_category ON email_templates(category);
-CREATE INDEX IF NOT EXISTS idx_email_templates_created_by ON email_templates(created_by);
-CREATE INDEX IF NOT EXISTS idx_email_templates_is_shared ON email_templates(is_shared) WHERE is_shared = true;
+-- Create indexes for communications_templates
+CREATE INDEX IF NOT EXISTS idx_communications_templates_org_id ON communications_templates(org_id);
+CREATE INDEX IF NOT EXISTS idx_communications_templates_category ON communications_templates(category);
+CREATE INDEX IF NOT EXISTS idx_communications_templates_created_by ON communications_templates(created_by);
+CREATE INDEX IF NOT EXISTS idx_communications_templates_is_shared ON communications_templates(is_shared) WHERE is_shared = true;
 
 -- SMS campaigns and messages
 CREATE TABLE IF NOT EXISTS sms_campaigns (
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
   campaign_id UUID REFERENCES communication_campaigns(id) ON DELETE CASCADE,
-  template_id UUID REFERENCES email_templates(id),
+  template_id UUID REFERENCES communications_templates(id),
   subject VARCHAR(500) NOT NULL,
   html_content TEXT NOT NULL,
   text_content TEXT,
@@ -316,7 +316,7 @@ CREATE INDEX IF NOT EXISTS idx_communication_templates_premium ON communication_
 -- =====================================================
 
 -- Enable RLS on all communication tables
-ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE communications_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sms_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sms_deliveries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_notifications ENABLE ROW LEVEL SECURITY;
@@ -330,7 +330,7 @@ ALTER TABLE email_deliveries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE communication_templates ENABLE ROW LEVEL SECURITY;
 
 -- Email Templates Policies
-CREATE POLICY "Users can view email templates in their organization" ON email_templates
+CREATE POLICY "Users can view email templates in their organization" ON communications_templates
   FOR SELECT USING (
     org_id IN (
       SELECT organization_id FROM user_profiles 
@@ -338,7 +338,7 @@ CREATE POLICY "Users can view email templates in their organization" ON email_te
     )
   );
 
-CREATE POLICY "Committee leads can manage email templates" ON email_templates
+CREATE POLICY "Committee leads can manage email templates" ON communications_templates
   FOR ALL USING (
     org_id IN (
       SELECT up.organization_id FROM user_profiles up
@@ -506,7 +506,7 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at
-CREATE TRIGGER update_email_templates_updated_at BEFORE UPDATE ON email_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_communications_templates_updated_at BEFORE UPDATE ON communications_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_sms_campaigns_updated_at BEFORE UPDATE ON sms_campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_push_notifications_updated_at BEFORE UPDATE ON push_notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_social_posts_updated_at BEFORE UPDATE ON social_posts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -607,7 +607,7 @@ BEGIN
     FROM information_schema.tables 
     WHERE table_schema = 'public' 
     AND table_name IN (
-        'email_templates', 'sms_campaigns', 'sms_deliveries', 
+        'communications_templates', 'sms_campaigns', 'sms_deliveries', 
         'push_notifications', 'push_deliveries', 'social_posts',
         'communication_analytics', 'user_communication_preferences',
         'communication_campaigns', 'email_campaigns', 'email_deliveries',
