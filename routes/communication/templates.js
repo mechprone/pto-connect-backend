@@ -8,10 +8,10 @@ const router = express.Router();
 // GET /api/communications/templates - Get email templates for organization
 router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
   try {
-    const { category, is_shared } = req.query;
+    const { category, template_type, sharing_level, is_shared } = req.query;
     
     let query = supabase
-      .from('email_templates')
+      .from('communications_templates')
       .select('*')
       .eq('org_id', req.orgId)
       .eq('is_active', true)
@@ -19,6 +19,14 @@ router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
 
     if (category) {
       query = query.eq('category', category);
+    }
+
+    if (template_type) {
+      query = query.eq('template_type', template_type);
+    }
+
+    if (sharing_level) {
+      query = query.eq('sharing_level', sharing_level);
     }
 
     if (is_shared !== undefined) {
@@ -55,7 +63,7 @@ router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
 router.get('/categories', getUserOrgContext, requireVolunteer, async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .select('category')
       .eq('org_id', req.orgId)
       .eq('is_active', true);
@@ -90,7 +98,7 @@ router.get('/:id', getUserOrgContext, requireVolunteer, async (req, res) => {
     const templateId = req.params.id;
 
     const { data, error } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .select('*')
       .eq('id', templateId)
       .eq('org_id', req.orgId)
@@ -133,7 +141,10 @@ router.post('/', getUserOrgContext, addUserOrgToBody, canManageCommunications, a
       design_json, 
       html_content, 
       thumbnail_url,
-      is_shared 
+      is_shared,
+      template_type,
+      sharing_level,
+      shared_with_orgs
     } = req.body;
 
     // Validate required fields
@@ -145,7 +156,7 @@ router.post('/', getUserOrgContext, addUserOrgToBody, canManageCommunications, a
     }
 
     const { data, error } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .insert([{
         name,
         category,
@@ -154,6 +165,9 @@ router.post('/', getUserOrgContext, addUserOrgToBody, canManageCommunications, a
         html_content,
         thumbnail_url,
         is_shared: is_shared || false,
+        template_type: template_type || 'email',
+        sharing_level: sharing_level || 'private',
+        shared_with_orgs: shared_with_orgs || null,
         created_by: req.user.id,
         org_id: req.body.org_id
       }])
@@ -201,12 +215,15 @@ router.put('/:id', getUserOrgContext, canManageCommunications, async (req, res) 
       html_content, 
       thumbnail_url,
       is_shared,
-      is_active 
+      is_active,
+      template_type,
+      sharing_level,
+      shared_with_orgs
     } = req.body;
 
     // Verify template belongs to user's organization
     const { data: template, error: fetchError } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .select('org_id, created_by')
       .eq('id', templateId)
       .single();
@@ -234,7 +251,7 @@ router.put('/:id', getUserOrgContext, canManageCommunications, async (req, res) 
     }
 
     const { data, error } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .update({
         name,
         category,
@@ -244,6 +261,9 @@ router.put('/:id', getUserOrgContext, canManageCommunications, async (req, res) 
         thumbnail_url,
         is_shared,
         is_active,
+        template_type,
+        sharing_level,
+        shared_with_orgs,
         updated_at: new Date().toISOString()
       })
       .eq('id', templateId)
@@ -287,7 +307,7 @@ router.delete('/:id', getUserOrgContext, canManageCommunications, async (req, re
 
     // Verify template belongs to user's organization
     const { data: template, error: fetchError } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .select('org_id, created_by')
       .eq('id', templateId)
       .single();
@@ -315,7 +335,7 @@ router.delete('/:id', getUserOrgContext, canManageCommunications, async (req, re
     }
 
     const { error } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .delete()
       .eq('id', templateId)
       .eq('org_id', req.orgId);
@@ -350,7 +370,7 @@ router.post('/:id/duplicate', getUserOrgContext, addUserOrgToBody, canManageComm
 
     // Get original template
     const { data: originalTemplate, error: fetchError } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .select('*')
       .eq('id', templateId)
       .eq('org_id', req.orgId)
@@ -372,7 +392,7 @@ router.post('/:id/duplicate', getUserOrgContext, addUserOrgToBody, canManageComm
 
     // Create duplicate
     const { data, error } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .insert([{
         name: name || `${originalTemplate.name} (Copy)`,
         category: originalTemplate.category,
@@ -381,6 +401,9 @@ router.post('/:id/duplicate', getUserOrgContext, addUserOrgToBody, canManageComm
         html_content: originalTemplate.html_content,
         thumbnail_url: originalTemplate.thumbnail_url,
         is_shared: false, // Duplicates are not shared by default
+        template_type: originalTemplate.template_type,
+        sharing_level: originalTemplate.sharing_level,
+        shared_with_orgs: originalTemplate.shared_with_orgs,
         created_by: req.user.id,
         org_id: req.body.org_id
       }])
@@ -422,7 +445,7 @@ router.post('/:id/use', getUserOrgContext, requireVolunteer, async (req, res) =>
     const templateId = req.params.id;
 
     const { data, error } = await supabase
-      .from('email_templates')
+      .from('communications_templates')
       .update({ 
         usage_count: supabase.raw('usage_count + 1'),
         updated_at: new Date().toISOString()
