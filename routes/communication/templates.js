@@ -5,7 +5,7 @@ import { requireVolunteer, canManageCommunications } from '../middleware/roleBas
 
 const router = express.Router();
 
-// GET /api/communications/templates - Get email templates for organization
+// GET /api/communications/templates - Get templates for organization
 router.get('/', getUserOrgContext, requireVolunteer, async (req, res) => {
   try {
     const { category, template_type, sharing_level, is_shared } = req.query;
