@@ -130,17 +130,32 @@ const analyzeEventComplexity = (eventData) => {
 };
 
 router.post('/generate-event', async (req, res) => {
+  console.log('🔍 [AI DEBUG] Generate-event endpoint hit');
+  console.log('🔍 [AI DEBUG] Headers:', req.headers);
+  console.log('🔍 [AI DEBUG] Body:', req.body);
+  
   const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Missing auth token' });
+  console.log('🔍 [AI DEBUG] Token present:', !!token);
+  console.log('🔍 [AI DEBUG] Token length:', token?.length);
+  
+  if (!token) {
+    console.error('❌ [AI DEBUG] No token provided');
+    return res.status(401).json({ error: 'Missing auth token' });
+  }
 
   try {
+    console.log('🔍 [AI DEBUG] Verifying token...');
     const user = await verifySupabaseToken(token);
+    console.log('✅ [AI DEBUG] Token verified successfully:', user?.id);
 
     if (!openai) {
+      console.error('❌ [AI DEBUG] OpenAI API key not configured');
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
+    console.log('✅ [AI DEBUG] OpenAI instance available');
 
     const { type, season, audience, theme, goal } = req.body;
+    console.log('🔍 [AI DEBUG] Request data:', { type, season, audience, theme, goal });
 
     const prompt = `
 You are an experienced PTO event planner for schools.
@@ -172,6 +187,7 @@ Your response should exactly match this structure:
 Do not include any commentary, markdown, or extra text — just the JSON object.
     `.trim();
 
+    console.log('🔍 [AI DEBUG] Calling OpenAI...');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
@@ -185,9 +201,14 @@ Do not include any commentary, markdown, or extra text — just the JSON object.
     });
 
     const response = completion.choices[0].message.content;
+    console.log('✅ [AI DEBUG] OpenAI response received');
     res.json({ result: response });
   } catch (err) {
+    console.error('❌ [AI DEBUG] Error details:', err);
     console.error('[ai.js] generation error:', err.message);
+    if (err.message.includes('getUser')) {
+      return res.status(401).json({ error: 'Authentication failed - invalid token' });
+    }
     res.status(500).json({ error: 'Failed to generate event plan.' });
   }
 });
