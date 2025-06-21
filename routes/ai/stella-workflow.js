@@ -1,8 +1,7 @@
 import express from 'express';
 import { OpenAI } from 'openai';
 import { supabase, verifySupabaseToken } from '../util/verifySupabaseToken.js';
-import { createClient } from '@supabase/supabase-js';
-import { authenticate } from '../middleware/auth.js';
+import { getUserOrgContext as authenticate } from '../middleware/organizationalContext.js';
 
 const router = express.Router();
 
@@ -624,17 +623,14 @@ router.post('/test-workflow-creation', authenticate, async (req, res) => {
     console.log('🧪 [STELLA TEST] Testing workflow creation...');
     
     const user = req.user;
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('org_id')
-      .eq('id', user.id)
-      .single();
+    const profile = req.profile;
+    const orgId = req.orgId;
 
-    if (profileError || !profile) {
-      return res.status(400).json({ error: 'User profile not found' });
-    }
-
-    console.log('🧪 [STELLA TEST] User profile found:', profile);
+    console.log('🧪 [STELLA TEST] User context found:', { 
+      userId: user.id, 
+      orgId: orgId,
+      role: req.userRole 
+    });
 
     // First create a test event since event_workflows requires event_id
     console.log('🧪 [STELLA TEST] Creating test event first...');
@@ -645,7 +641,7 @@ router.post('/test-workflow-creation', authenticate, async (req, res) => {
         description: 'Test event created for workflow testing',
         event_date: new Date().toISOString().split('T')[0],
         location: 'Test Location',
-        org_id: profile.org_id,
+        org_id: orgId,
         created_by: user.id,
         status: 'planning'
       })
@@ -667,7 +663,7 @@ router.post('/test-workflow-creation', authenticate, async (req, res) => {
       .from('event_workflows')
       .insert({
         event_id: testEvent.id,
-        org_id: profile.org_id,
+        org_id: orgId,
         workflow_name: 'Test Workflow - Direct Creation',
         workflow_type: 'test',
         event_type: 'test',
