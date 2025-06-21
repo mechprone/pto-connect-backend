@@ -642,4 +642,29 @@ router.get('/inspect-events-constraint', async (req, res) => {
   }
 });
 
+// Add a simple ping endpoint to test deployment
+router.get('/ping', (req, res) => {
+  console.log('🏓 [STELLA] Ping endpoint hit at', new Date().toISOString());
+  res.json({
+    success: true,
+    message: 'Stella workflow endpoint is active',
+    timestamp: new Date().toISOString(),
+    debugging_active: true
+  });
+});
+
+// Add a simple test endpoint that doesn't require auth
+router.post('/debug-test', (req, res) => {
+  console.log('🐛 [STELLA] Debug test endpoint hit');
+  console.log('🐛 [STELLA] Request body:', JSON.stringify(req.body, null, 2));
+  console.log('🐛 [STELLA] Request headers:', req.headers);
+  
+  res.json({
+    success: true,
+    message: 'Debug test successful',
+    received_body: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
 export default router; 
