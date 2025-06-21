@@ -667,4 +667,19 @@ router.post('/debug-test', (req, res) => {
   });
 });
 
+// Add a super simple test endpoint with no middleware
+router.post('/simple-test', (req, res) => {
+  try {
+    console.log('🧪 Simple test endpoint hit');
+    res.json({
+      success: true,
+      message: 'Simple test works',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.log('❌ Simple test failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router; 
