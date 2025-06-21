@@ -80,6 +80,7 @@ import sharedTemplateRoutes from './routes/shared/template.js'
 import notificationRoutes from './routes/notification.js'
 import testRoutes from './routes/ai/test.js'
 import aiRoutes from './routes/ai/ai.js'
+import stellaWorkflowRoutes from './routes/ai/stella-workflow.js'
 import apiKeyRoutes from './routes/apiKeys.js'
 import monitoringRoutes from './routes/monitoring.js'
 import enhancedFundraiserRoutes from './routes/fundraiser/enhanced-fundraiser.js'
@@ -120,6 +121,7 @@ app.use('/api/notifications', notificationRoutes)
 
 app.use('/api/test', testRoutes)
 app.use('/api/ai', aiRoutes)
+app.use('/api/stella', stellaWorkflowRoutes)
 
 // Health check endpoints
 app.get('/', (req, res) => {
