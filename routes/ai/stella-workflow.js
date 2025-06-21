@@ -682,4 +682,130 @@ router.post('/simple-test', (req, res) => {
   }
 });
 
+// Add a step-by-step test of the main workflow logic
+router.post('/step-test', async (req, res) => {
+  try {
+    console.log('🔬 Step test started');
+    
+    // Step 1: Check auth token
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No auth token', step: 1 });
+    }
+    
+    // Step 2: Try auth import
+    const { default: verifySupabaseToken } = await import('../util/verifySupabaseToken.js');
+    
+    // Step 3: Verify token
+    const user = await verifySupabaseToken(token);
+    
+    res.json({
+      success: true,
+      message: 'Auth steps completed',
+      user_id: user.id
+    });
+    
+  } catch (error) {
+    console.log('❌ Step test failed:', error.message);
+    res.status(500).json({ error: error.message, step: 'failed' });
+  }
+});
+
+// Add a step-by-step test of the main workflow logic
+router.post('/step-by-step-test', async (req, res) => {
+  try {
+    console.log('🔬 Step-by-step test started');
+    
+    // Step 1: Check if we have auth header
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No auth token', step: 'auth_check' });
+    }
+    console.log('✅ Step 1: Auth token found');
+    
+    // Step 2: Try to import verifySupabaseToken
+    let verifySupabaseToken;
+    try {
+      const authModule = await import('../util/verifySupabaseToken.js');
+      verifySupabaseToken = authModule.default;
+      console.log('✅ Step 2: verifySupabaseToken imported');
+    } catch (error) {
+      console.log('❌ Step 2 failed:', error.message);
+      return res.status(500).json({ error: 'Failed to import auth module', step: 'import_auth', details: error.message });
+    }
+    
+    // Step 3: Try to verify token
+    let user;
+    try {
+      user = await verifySupabaseToken(token);
+      console.log('✅ Step 3: User verified:', user.id);
+    } catch (error) {
+      console.log('❌ Step 3 failed:', error.message);
+      return res.status(401).json({ error: 'Token verification failed', step: 'token_verify', details: error.message });
+    }
+    
+    // Step 4: Try to import supabase
+    let supabase;
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      console.log('✅ Step 4: Supabase client created');
+    } catch (error) {
+      console.log('❌ Step 4 failed:', error.message);
+      return res.status(500).json({ error: 'Failed to create Supabase client', step: 'supabase_client', details: error.message });
+    }
+    
+    // Step 5: Try to get user profile
+    let profile;
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+      
+      profile = profileData;
+      console.log('✅ Step 5: User profile found:', profile.id);
+    } catch (error) {
+      console.log('❌ Step 5 failed:', error.message);
+      return res.status(500).json({ error: 'Failed to get user profile', step: 'user_profile', details: error.message });
+    }
+    
+    // Step 6: Try to parse request body
+    let eventData, stellaContext, moduleIntegrations;
+    try {
+      ({ eventData, stellaContext, moduleIntegrations } = req.body);
+      console.log('✅ Step 6: Request body parsed');
+    } catch (error) {
+      console.log('❌ Step 6 failed:', error.message);
+      return res.status(400).json({ error: 'Failed to parse request body', step: 'parse_body', details: error.message });
+    }
+    
+    // Success!
+    res.json({
+      success: true,
+      message: 'All steps completed successfully',
+      user_id: user.id,
+      profile_id: profile.id,
+      org_id: profile.org_id,
+      has_event_data: !!eventData,
+      has_stella_context: !!stellaContext,
+      has_module_integrations: !!moduleIntegrations
+    });
+    
+  } catch (error) {
+    console.log('❌ Step-by-step test failed:', error.message);
+    res.status(500).json({ 
+      error: 'Step-by-step test failed', 
+      step: 'unknown', 
+      details: error.message,
+      stack: error.stack 
+    });
+  }
+});
+
 export default router; 
