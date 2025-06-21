@@ -91,7 +91,7 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
         org_id: profile.org_id,
         created_by: user.id,
         stella_generated: true,
-        status: 'published'
+        status: 'planning'
       })
       .select()
       .single();
@@ -523,7 +523,7 @@ router.post('/test-workflow-creation', async (req, res) => {
       location: 'Test Location',
       org_id: profile.org_id,
       created_by: user.id,
-      status: 'published'
+      status: 'planning'  // Use valid status value
     };
 
     const { data: newEvent, error: eventError } = await supabase
@@ -585,6 +585,56 @@ router.post('/test-workflow-creation', async (req, res) => {
       success: false,
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// Add a database constraint inspection endpoint
+router.get('/inspect-events-constraint', async (req, res) => {
+  console.log('🔍 [STELLA] Inspecting events table constraint...');
+  
+  try {
+    // Query the database constraint information
+    const { data: constraintInfo, error: constraintError } = await supabase
+      .rpc('get_table_constraints', { table_name: 'events' })
+      .single();
+    
+    if (constraintError) {
+      console.log('❌ [STELLA] Error getting constraint info:', constraintError);
+      
+      // Alternative: Query information_schema
+      const { data: schemaInfo, error: schemaError } = await supabase
+        .from('information_schema.check_constraints')
+        .select('*')
+        .eq('constraint_name', 'events_status_check');
+      
+      if (schemaError) {
+        console.log('❌ [STELLA] Error getting schema info:', schemaError);
+        return res.json({
+          success: false,
+          message: 'Could not inspect constraint',
+          error: schemaError.message
+        });
+      }
+      
+      return res.json({
+        success: true,
+        constraint_info: schemaInfo,
+        method: 'information_schema'
+      });
+    }
+    
+    res.json({
+      success: true,
+      constraint_info: constraintInfo,
+      method: 'rpc'
+    });
+    
+  } catch (error) {
+    console.log('❌ [STELLA] Exception inspecting constraint:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
