@@ -93,7 +93,6 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
         estimated_budget: eventData.estimated_budget,
         org_id: profile.org_id,
         created_by: user.id,
-        stella_generated: true,
         status: 'planning'
       })
       .select()
@@ -133,7 +132,6 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
         org_id: profile.org_id,
         workflow_name: `${eventData.title} - Comprehensive Workflow`,
         workflow_type: 'comprehensive',
-        stella_generated: true,
         event_type: stellaContext.eventType,
         primary_goal: stellaContext.primaryGoal,
         target_audience: stellaContext.targetAudience,
