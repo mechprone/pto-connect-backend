@@ -1,6 +1,8 @@
 import express from 'express';
 import { OpenAI } from 'openai';
 import { supabase, verifySupabaseToken } from '../util/verifySupabaseToken.js';
+import { createClient } from '@supabase/supabase-js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -8,6 +10,49 @@ const router = express.Router();
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
+
+// Supabase client is already imported from verifySupabaseToken.js
+
+// ================================================================
+// TABLE CHECK ENDPOINT
+// ================================================================
+
+// Check if event_workflows table exists
+router.get('/check-table', async (req, res) => {
+  try {
+    console.log('🔍 [TABLE CHECK] Checking event_workflows table...');
+    
+    const { data, error } = await supabase
+      .from('event_workflows')
+      .select('*')
+      .limit(1);
+    
+    if (error) {
+      console.error('❌ [TABLE CHECK] Table error:', error);
+      return res.json({
+        exists: false,
+        error: error.message,
+        details: error
+      });
+    }
+    
+    console.log('✅ [TABLE CHECK] Table exists, sample data:', data);
+    
+    res.json({
+      exists: true,
+      message: 'event_workflows table exists',
+      sampleData: data
+    });
+    
+  } catch (error) {
+    console.error('💥 [TABLE CHECK] Unexpected error:', error);
+    res.status(500).json({
+      exists: false,
+      error: 'Unexpected error',
+      details: error.message
+    });
+  }
+});
 
 // ================================================================
 // STELLA COMPREHENSIVE WORKFLOW GENERATION ENDPOINT
@@ -125,6 +170,16 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
     
     console.log('✅ [STELLA] event_workflows table is accessible');
     
+    console.log('🔍 [STELLA] About to create workflow with data:', {
+      event_id: newEvent.id,
+      org_id: profile.org_id,
+      workflow_name: `${eventData.title} - Comprehensive Workflow`,
+      workflow_type: 'comprehensive',
+      event_type: stellaContext.eventType,
+      status: 'creating',
+      created_by: user.id
+    });
+    
     const { data: workflow, error: workflowError } = await supabase
       .from('event_workflows')
       .insert({
@@ -141,6 +196,7 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
 
     if (workflowError) {
       console.error('❌ [STELLA] Workflow creation failed:', workflowError);
+      console.error('❌ [STELLA] Detailed workflow error:', JSON.stringify(workflowError, null, 2));
       return res.status(500).json({ 
         error: 'Failed to create workflow record',
         details: workflowError.message 
@@ -148,6 +204,7 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
     }
 
     console.log('✅ [STELLA] Workflow master record created:', workflow.id);
+    console.log('✅ [STELLA] Workflow details:', JSON.stringify(workflow, null, 2));
 
     // For now, return a simple success response to test the basic flow
     console.log('🎉 [STELLA] Basic workflow creation successful!');
@@ -176,6 +233,97 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
       error: 'Failed to generate comprehensive workflow',
       details: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// ================================================================
+// SIMPLIFIED STELLA WORKFLOW ENDPOINT (NO WORKFLOW TABLE)
+// ================================================================
+
+router.post('/generate-comprehensive-workflow-simple', async (req, res) => {
+  console.log('🌟 [STELLA SIMPLE] Simplified workflow generation started');
+  
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) {
+    console.log('❌ [STELLA SIMPLE] No auth token provided');
+    return res.status(401).json({ error: 'Missing auth token' });
+  }
+
+  try {
+    console.log('🔍 [STELLA SIMPLE] Verifying token...');
+    const user = await verifySupabaseToken(token);
+    console.log('✅ [STELLA SIMPLE] User authenticated:', user.id);
+
+    const { eventData, stellaContext, moduleIntegrations } = req.body;
+    console.log('📊 [STELLA SIMPLE] Processing event:', eventData?.title);
+
+    if (!eventData || !stellaContext || !moduleIntegrations) {
+      return res.status(400).json({ 
+        error: 'Missing required data: eventData, stellaContext, and moduleIntegrations required' 
+      });
+    }
+
+    // Get user's organization ID
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.org_id) {
+      console.error('❌ [STELLA SIMPLE] Profile error:', profileError);
+      return res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+
+    console.log('✅ [STELLA SIMPLE] Organization found:', profile.org_id);
+
+    // CREATE ONLY THE EVENT (NO WORKFLOW TABLE)
+    console.log('📝 [STELLA SIMPLE] Creating event...');
+    
+    const { data: newEvent, error: eventError } = await supabase
+      .from('events')
+      .insert({
+        title: eventData.title,
+        description: eventData.description,
+        event_date: eventData.event_date,
+        start_time: eventData.start_time,
+        end_time: eventData.end_time,
+        location: eventData.location,
+        expected_attendance: eventData.expected_attendance,
+        estimated_budget: eventData.estimated_budget,
+        org_id: profile.org_id,
+        created_by: user.id,
+        status: 'planning'
+      })
+      .select()
+      .single();
+
+    if (eventError) {
+      console.error('❌ [STELLA SIMPLE] Event creation failed:', eventError);
+      return res.status(500).json({ error: 'Failed to create event', details: eventError.message });
+    }
+
+    console.log('✅ [STELLA SIMPLE] Event created successfully:', newEvent.id);
+
+    // Return simplified success response with just the event
+    const response = {
+      success: true,
+      message: 'Event created successfully (simplified mode)',
+      event: newEvent,
+      stella_context: stellaContext,
+      modules_requested: moduleIntegrations,
+      note: 'Full workflow orchestration coming soon - Phase 2 feature'
+    };
+
+    console.log('🎉 [STELLA SIMPLE] Returning success response');
+    res.json(response);
+
+  } catch (error) {
+    console.error('❌ [STELLA SIMPLE] Unexpected error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
     });
   }
 });
@@ -470,107 +618,87 @@ router.get('/test-database-schema', async (req, res) => {
   }
 });
 
-// Add a simplified workflow test endpoint
-router.post('/test-workflow-creation', async (req, res) => {
-  console.log('🧪 [STELLA] Testing workflow creation process...');
-  
-  const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) {
-    return res.status(401).json({ error: 'Missing auth token' });
-  }
-
+// Simple workflow creation test endpoint
+router.post('/test-workflow-creation', authenticate, async (req, res) => {
   try {
-    // Step 1: Verify token
-    console.log('🔍 [STELLA TEST] Step 1: Verifying token...');
-    const user = await verifySupabaseToken(token);
-    console.log('✅ [STELLA TEST] Token verified for user:', user.id);
-
-    // Step 2: Get user profile
-    console.log('🔍 [STELLA TEST] Step 2: Getting user profile...');
+    console.log('🧪 [STELLA TEST] Testing workflow creation...');
+    
+    const user = req.user;
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('org_id, full_name')
+      .select('org_id')
       .eq('id', user.id)
       .single();
 
-    if (profileError) {
-      console.error('❌ [STELLA TEST] Profile error:', profileError);
-      return res.status(500).json({ error: 'Profile fetch failed', details: profileError.message });
+    if (profileError || !profile) {
+      return res.status(400).json({ error: 'User profile not found' });
     }
 
-    console.log('✅ [STELLA TEST] Profile found:', { org_id: profile.org_id, name: profile.full_name });
+    console.log('🧪 [STELLA TEST] User profile found:', profile);
 
-    // Step 3: Create simple event
-    console.log('🔍 [STELLA TEST] Step 3: Creating test event...');
-    const testEventData = {
-      title: 'Test Event - ' + Date.now(),
-      description: 'Test event for workflow debugging',
-      event_date: new Date().toISOString().split('T')[0],
-      location: 'Test Location',
-      org_id: profile.org_id,
-      created_by: user.id,
-      status: 'planning'  // Use valid status value
-    };
-
-    const { data: newEvent, error: eventError } = await supabase
+    // First create a test event since event_workflows requires event_id
+    console.log('🧪 [STELLA TEST] Creating test event first...');
+    const { data: testEvent, error: eventError } = await supabase
       .from('events')
-      .insert(testEventData)
+      .insert({
+        title: 'Test Event for Workflow - ' + Date.now(),
+        description: 'Test event created for workflow testing',
+        event_date: new Date().toISOString().split('T')[0],
+        location: 'Test Location',
+        org_id: profile.org_id,
+        created_by: user.id,
+        status: 'planning'
+      })
       .select()
       .single();
 
     if (eventError) {
-      console.error('❌ [STELLA TEST] Event creation error:', eventError);
-      return res.status(500).json({ error: 'Event creation failed', details: eventError.message });
+      console.error('❌ [STELLA TEST] Event creation failed:', eventError);
+      return res.status(500).json({ 
+        error: 'Failed to create test event',
+        details: eventError 
+      });
     }
 
-    console.log('✅ [STELLA TEST] Event created:', newEvent.id);
+    console.log('✅ [STELLA TEST] Test event created:', testEvent.id);
 
-    // Step 4: Create simple workflow record
-    console.log('🔍 [STELLA TEST] Step 4: Creating test workflow...');
-    const testWorkflowData = {
-      event_id: newEvent.id,
-      org_id: profile.org_id,
-      workflow_name: 'Test Workflow - ' + Date.now(),
-      workflow_type: 'test',
-      stella_generated: true,
-      event_type: 'test',
-      primary_goal: 'Testing workflow creation',
-      target_audience: 'test',
-      status: 'creating',
-      created_by: user.id
-    };
-
+    // Now test workflow creation with the event_id
     const { data: workflow, error: workflowError } = await supabase
       .from('event_workflows')
-      .insert(testWorkflowData)
+      .insert({
+        event_id: testEvent.id,
+        org_id: profile.org_id,
+        workflow_name: 'Test Workflow - Direct Creation',
+        workflow_type: 'test',
+        event_type: 'test',
+        status: 'creating',
+        created_by: user.id
+      })
       .select()
       .single();
 
     if (workflowError) {
-      console.error('❌ [STELLA TEST] Workflow creation error:', workflowError);
-      return res.status(500).json({ error: 'Workflow creation failed', details: workflowError.message });
+      console.error('❌ [STELLA TEST] Workflow creation failed:', workflowError);
+      return res.status(500).json({ 
+        error: 'Failed to create workflow',
+        details: workflowError 
+      });
     }
 
-    console.log('✅ [STELLA TEST] Workflow created:', workflow.id);
-
-    // Step 5: Success response
+    console.log('✅ [STELLA TEST] Workflow created successfully:', workflow);
+    
     res.json({
       success: true,
-      message: 'Test workflow creation successful!',
-      data: {
-        event_id: newEvent.id,
-        workflow_id: workflow.id,
-        user_id: user.id,
-        org_id: profile.org_id
-      }
+      message: 'Test workflow created successfully',
+      event: testEvent,
+      workflow: workflow
     });
 
   } catch (error) {
-    console.error('❌ [STELLA TEST] Test failed:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    console.error('❌ [STELLA TEST] Unexpected error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
     });
   }
 });
