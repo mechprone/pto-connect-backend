@@ -694,10 +694,10 @@ router.post('/step-test', async (req, res) => {
     }
     
     // Step 2: Try auth import
-    const { default: verifySupabaseToken } = await import('../util/verifySupabaseToken.js');
+    const { verifySupabaseToken: verifyToken } = await import('../util/verifySupabaseToken.js');
     
     // Step 3: Verify token
-    const user = await verifySupabaseToken(token);
+    const user = await verifyToken(token);
     
     res.json({
       success: true,
