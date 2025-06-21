@@ -80,10 +80,18 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
     const { data: newEvent, error: eventError } = await supabase
       .from('events')
       .insert({
-        ...eventData,
+        title: eventData.title,
+        description: eventData.description,
+        event_date: eventData.event_date,
+        start_time: eventData.start_time,
+        end_time: eventData.end_time,
+        location: eventData.location,
+        expected_attendance: eventData.expected_attendance,
+        estimated_budget: eventData.estimated_budget,
         org_id: profile.org_id,
         created_by: user.id,
-        stella_generated: true
+        stella_generated: true,
+        status: 'published'
       })
       .select()
       .single();
@@ -515,7 +523,7 @@ router.post('/test-workflow-creation', async (req, res) => {
       location: 'Test Location',
       org_id: profile.org_id,
       created_by: user.id,
-      status: 'draft'
+      status: 'published'
     };
 
     const { data: newEvent, error: eventError } = await supabase
