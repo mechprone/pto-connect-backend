@@ -16,7 +16,7 @@ const openai = process.env.OPENAI_API_KEY
 router.post('/generate-comprehensive-workflow', async (req, res) => {
   console.log('🌟 [STELLA] Comprehensive workflow generation started');
   console.log('🌟 [STELLA] Request body keys:', Object.keys(req.body));
-  console.log('🌟 [STELLA] Request headers:', req.headers);
+  console.log('🌟 [STELLA] Full request body:', JSON.stringify(req.body, null, 2));
   
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) {
@@ -32,6 +32,9 @@ router.post('/generate-comprehensive-workflow', async (req, res) => {
     console.log('✅ [STELLA] User authenticated:', user.id);
 
     const { eventData, stellaContext, moduleIntegrations } = req.body;
+    console.log('📊 [STELLA] Event data received:', JSON.stringify(eventData, null, 2));
+    console.log('🎯 [STELLA] Stella context received:', JSON.stringify(stellaContext, null, 2));
+    console.log('🔧 [STELLA] Module integrations:', JSON.stringify(moduleIntegrations, null, 2));
     console.log('📊 [STELLA] Received data:', {
       hasEventData: !!eventData,
       hasStellaContext: !!stellaContext,
