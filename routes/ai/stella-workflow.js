@@ -416,4 +416,64 @@ router.get('/workflows', async (req, res) => {
   }
 });
 
+// Add a simple test endpoint before the main workflow endpoint
+router.get('/test-database-schema', async (req, res) => {
+  console.log('🔍 [STELLA] Testing database schema...');
+  
+  try {
+    // Test 1: Check if events table works
+    const { data: eventsTest, error: eventsError } = await supabase
+      .from('events')
+      .select('id, title')
+      .limit(1);
+    
+    console.log('✅ [STELLA] Events table test:', eventsError ? 'FAILED' : 'PASSED');
+    
+    // Test 2: Check if event_workflows table exists
+    const { data: workflowsTest, error: workflowsError } = await supabase
+      .from('event_workflows')
+      .select('id')
+      .limit(1);
+    
+    console.log('✅ [STELLA] Event workflows table test:', workflowsError ? 'FAILED' : 'PASSED');
+    
+    // Test 3: Check profiles table
+    const { data: profilesTest, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, org_id')
+      .limit(1);
+    
+    console.log('✅ [STELLA] Profiles table test:', profilesError ? 'FAILED' : 'PASSED');
+    
+    res.json({
+      success: true,
+      tests: {
+        events: {
+          status: eventsError ? 'FAILED' : 'PASSED',
+          error: eventsError?.message,
+          count: eventsTest?.length || 0
+        },
+        event_workflows: {
+          status: workflowsError ? 'FAILED' : 'PASSED',
+          error: workflowsError?.message,
+          count: workflowsTest?.length || 0
+        },
+        profiles: {
+          status: profilesError ? 'FAILED' : 'PASSED',
+          error: profilesError?.message,
+          count: profilesTest?.length || 0
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ [STELLA] Database schema test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 export default router; 
